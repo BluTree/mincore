@@ -34,6 +34,9 @@ namespace mc
 
 		T& operator[](uint32_t pos);
 
+		uint32_t size() const;
+		uint32_t capacity() const;
+
 	private:
 		T*       arr_ {nullptr};
 		uint32_t size_ {0};
@@ -136,5 +139,17 @@ namespace mc
 	T& vector<T>::operator[](uint32_t pos)
 	{
 		return arr_[pos];
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::size() const
+	{
+		return size_;
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::capacity() const
+	{
+		return cap_;
 	}
 }

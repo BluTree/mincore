@@ -3,10 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define RED "\x1b[31m"
-#define GREEN "\x1b[32m"
-#define DEFAULT "\x1b[0m"
-
 unit_state& unit_state::instance()
 {
 	static unit_state inst;
@@ -43,16 +39,16 @@ int unit_state::run_tests()
 
 void unit_state::add_group(group_base* group)
 {
-	if (!group_capa)
+	if (!group_cap)
 	{
 		groups = reinterpret_cast<group_base**>(malloc(sizeof(group_base*)));
-		group_capa = 1;
+		group_cap = 1;
 	}
-	else if (group_size == group_capa)
+	else if (group_size == group_cap)
 	{
-		group_capa *= 2;
+		group_cap *= 2;
 		groups = reinterpret_cast<group_base**>(
-			realloc(groups, sizeof(group_base*) * group_capa));
+			realloc(groups, sizeof(group_base*) * group_cap));
 	}
 
 	groups[group_size] = group;
@@ -92,24 +88,18 @@ void group_base::run()
 
 void group_base::add_test(test_base* test)
 {
-	if (!test_capa)
+	if (!test_cap)
 	{
 		tests = reinterpret_cast<test_base**>(malloc(sizeof(test_base*)));
-		test_capa = 1;
+		test_cap = 1;
 	}
-	else if (test_size == test_capa)
+	else if (test_size == test_cap)
 	{
-		test_capa *= 2;
+		test_cap *= 2;
 		tests =
-			reinterpret_cast<test_base**>(realloc(tests, sizeof(test_base*) * test_capa));
+			reinterpret_cast<test_base**>(realloc(tests, sizeof(test_base*) * test_cap));
 	}
 
 	tests[test_size] = test;
 	++test_size;
-}
-
-void print_check_error(
-	char const* a, char const* b, char const* op, int line, char const* file)
-{
-	printf("||-[failed]: %s %s %s (%s:%d)\n", a, op, b, file, line);
 }
