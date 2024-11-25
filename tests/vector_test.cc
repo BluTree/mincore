@@ -40,4 +40,6 @@ GROUP(vector)
 		for (int32_t i {0}; i < static_cast<int32_t>(vec5.size()); ++i)
 			CHECK_EQ(vec5[i], i)
 	}
+
+	TEST(insert) {}
 }

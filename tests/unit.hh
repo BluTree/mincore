@@ -25,7 +25,7 @@
 		{}                                                                               \
 		void run() override;                                                             \
 	};                                                                                   \
-	test_##Name test_##Name_instance(&group_instance);                                   \
+	test_##Name test_##Name##_instance(&group_instance);                                 \
 	void        test_##Name::run()
 
 #define CHECK_EQ(a, b)                                                                   \

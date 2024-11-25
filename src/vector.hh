@@ -48,10 +48,28 @@ namespace mc
 
 		void clear();
 		void reserve(uint32_t cap_);
+		void fit();
+
 		void resize(uint32_t size)
 			requires default_constructible<T>;
 		void resize(uint32_t size, T const& val)
 			requires copy_constructible<T>;
+
+		template <typename... Args>
+		T& emplace_back(Args&&... args)
+			requires constructible_from<T, Args...>;
+		void pop_back();
+
+		uint32_t insert(uint32_t pos, T const& val, uint32_t count = 1)
+			requires copy_constructible<T> && copy_assignable<T>;
+		uint32_t insert(uint32_t pos, T&& val)
+			requires move_constructible<T> && move_assignable<T>;
+		uint32_t insert(uint32_t pos, std::initializer_list<T> ilist)
+			requires copy_constructible<T> && copy_assignable<T>;
+		// TODO Insert first last
+
+		uint32_t erase(uint32_t pos, uint32_t count = 1)
+			requires move_assignable<T>;
 
 	private:
 		void realloc(uint32_t cap);
@@ -235,13 +253,20 @@ namespace mc
 	}
 
 	template <vector_type T>
+	void vector<T>::fit()
+	{
+		if (cap_ > size_)
+			realloc(size_);
+	}
+
+	template <vector_type T>
 	void vector<T>::resize(uint32_t size)
 		requires default_constructible<T>
 	{
 		if (size > size_)
 		{
 			if (size > cap_)
-				realloc(cap);
+				realloc(size);
 
 			for (uint32_t i {size_}; i < size; ++i)
 				new (arr_ + i) T;
@@ -262,7 +287,7 @@ namespace mc
 		if (size > size_)
 		{
 			if (size > cap_)
-				realloc(cap);
+				realloc(size_);
 
 			for (uint32_t i {size_}; i < size; ++i)
 				new (arr_ + i) T(val);
@@ -277,10 +302,202 @@ namespace mc
 	}
 
 	template <vector_type T>
+	template <typename... Args>
+	T& vector<T>::emplace_back(Args&&... args)
+		requires constructible_from<T, Args...>
+	{
+		if (size_ + 1 < cap_)
+		{
+			if (!cap_)
+				realloc(1);
+			else
+				realloc(cap_ * 2);
+		}
+
+		new (arr_ + size_) T(static_cast<Args&&>(args)...);
+		++size_;
+
+		return arr_[size_ - 1];
+	}
+
+	template <vector_type T>
+	void vector<T>::pop_back()
+	{
+		arr_[size_ - 1].~T();
+		--size_;
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::insert(uint32_t pos, T const& val, uint32_t count)
+		requires copy_constructible<T> && copy_assignable<T>
+	{
+		if (cap_ < size_ + count)
+		{
+			if (!cap_)
+				realloc(count);
+			else
+			{
+				uint32_t new_cap = cap_;
+				while (new_cap < size_ + count)
+					new_cap *= 2;
+
+				realloc(new_cap);
+			}
+		}
+
+		if (pos == size_)
+		{
+			for (uint32_t i {pos}; i < pos + count; ++i)
+				new (arr_ + i) T(val);
+		}
+		else
+		{
+			for (uint32_t i {size_}; i > size_ - count; --i)
+				if constexpr (requires { requires move_constructible<T>; })
+					new (arr_ + i - 1 + count) T(static_cast<T&&>(arr_[i - 1]));
+				else
+					new (arr_ + i - 1 + count) T(arr_[i - 1]);
+
+			for (uint32_t i {size_ - count}; i > pos; --i)
+			{
+				if constexpr (requires { requires move_assignable<T>; })
+					arr_[i - 1 + count] = static_cast<T&&>(arr_[i - 1]);
+				else
+				{
+					arr_[i - 1 + count] = arr_[i - 1];
+					arr_[i - 1].~T();
+				}
+			}
+
+			for (uint32_t i {pos}; i < pos + count; ++i)
+				arr_[i] = val;
+		}
+
+		size_ += count;
+
+		return pos;
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::insert(uint32_t pos, [[maybe_unused]] T&& val)
+		requires move_constructible<T> && move_assignable<T>
+	{
+		if (size_ + 1 < cap_)
+		{
+			if (!cap_)
+				realloc(1);
+			else
+				realloc(cap_ * 2);
+		}
+
+		if (pos == size_)
+		{
+			new (arr_ + size_) T(static_cast<T&&>(val));
+		}
+		else
+		{
+			for (uint32_t i {size_}; i > size_ - 1; --i)
+				if constexpr (requires { requires move_constructible<T>; })
+					new (arr_ + i) T(static_cast<T&&>(arr_[i - 1]));
+				else
+					new (arr_ + i) T(arr_[i - 1]);
+
+			for (uint32_t i {size_ - 1}; i > pos; --i)
+			{
+				if constexpr (requires { requires move_assignable<T>; })
+					arr_[i] = static_cast<T&&>(arr_[i - 1]);
+				else
+				{
+					arr_[i] = arr_[i - 1];
+					arr_[i - 1].~T();
+				}
+			}
+
+			arr_[pos] = static_cast<T&&>(val);
+		}
+
+		++size_;
+		return pos;
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::insert(uint32_t                                  pos,
+	                           [[maybe_unused]] std::initializer_list<T> ilist)
+		requires copy_constructible<T> && copy_assignable<T>
+	{
+		if (cap_ < size_ + ilist.size())
+		{
+			if (!cap_)
+				realloc(ilist.size());
+			else
+			{
+				uint32_t new_cap = cap_;
+				while (new_cap < size_ + ilist.size())
+					new_cap *= 2;
+
+				realloc(new_cap);
+			}
+		}
+
+		if (pos == size_)
+		{
+			T* it = ilist.begin();
+			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
+			{
+				new (arr_ + i) T(*it);
+				++it;
+			}
+		}
+		else
+		{
+			for (uint32_t i {size_}; i > size_ - ilist.size(); --i)
+				if constexpr (requires { requires move_constructible<T>; })
+					new (arr_ + i - 1 + ilist.size()) T(static_cast<T&&>(arr_[i - 1]));
+				else
+					new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
+
+			for (uint32_t i {size_ - ilist.size()}; i > pos; --i)
+			{
+				if constexpr (requires { requires move_assignable<T>; })
+					arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
+				else
+				{
+					arr_[i - 1 + ilist.size()] = arr_[i - 1];
+					arr_[i - 1].~T();
+				}
+			}
+
+			T* it = ilist.begin();
+			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
+			{
+				arr_[i] = *it;
+				++it;
+			}
+		}
+
+		size_ += ilist.size();
+		return pos;
+	}
+
+	template <vector_type T>
+	uint32_t vector<T>::erase(uint32_t pos, [[maybe_unused]] uint32_t count)
+		requires move_assignable<T>
+	{
+		for (uint32_t i {pos}; i < size_ - count; ++i)
+			arr_[i] = static_cast<T&&>(arr_[i + count]);
+
+		for (uint32_t i {size_ - count}; i < size_; ++i)
+			arr_[i].~T();
+
+		size_ -= count;
+		return pos;
+	}
+
+	template <vector_type T>
 	void vector<T>::realloc(uint32_t cap)
 	{
-		T* new_arr = alloc(sizeof(T) * cap, alignof(T));
-		if constexpr (requires { requires move_constructible<T> })
+		T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * cap, alignof(T)));
+		if constexpr (requires { requires move_constructible<T>; })
 		{
 			for (uint32_t i {0}; i < size_; ++i)
 			{
@@ -301,4 +518,4 @@ namespace mc
 		cap_ = cap;
 		arr_ = new_arr;
 	}
-}
+} // namespace mc
