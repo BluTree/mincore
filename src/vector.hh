@@ -60,6 +60,10 @@ namespace mc
 			requires constructible_from<T, Args...>;
 		void pop_back();
 
+		template <typename... Args>
+		uint32_t emplace(uint32_t pos, Args&&... args)
+			requires constructible_from<T, Args...>;
+
 		uint32_t insert(uint32_t pos, T const& val, uint32_t count = 1)
 			requires copy_constructible<T> && copy_assignable<T>;
 		uint32_t insert(uint32_t pos, T&& val)
@@ -328,9 +332,53 @@ namespace mc
 	}
 
 	template <vector_type T>
+	template <typename... Args>
+	uint32_t vector<T>::emplace(uint32_t pos, Args&&... args)
+		requires constructible_from<T, Args...>
+	{
+		// TODO don't use generic realloc, to prevent useless move/copy
+		if (size_ + 1 < cap_)
+		{
+			if (!cap_)
+				realloc(1);
+			else
+				realloc(cap_ * 2);
+		}
+
+		if (pos == size_)
+		{
+			new (arr_ + pos) T(static_cast<Args&&>(args)...);
+		}
+		else
+		{
+			if constexpr (requires { requires move_constructible<T>; })
+				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
+			else
+				new (arr_ + size_) T(arr_[size_ - 1]);
+
+			for (uint32_t i {size_ - 1}; i > pos; --i)
+			{
+				if constexpr (requires { requires move_assignable<T>; })
+					arr_[i] = static_cast<T&&>(arr_[i - 1]);
+				else
+				{
+					arr_[i] = arr_[i - 1];
+					arr_[i - 1].~T();
+				}
+			}
+
+			if constexpr (requires { requires move_assignable<T>; })
+				arr_[pos].~T();
+			new (arr_ + pos) T(static_cast<Args&&>(args)...);
+		}
+		return pos;
+	}
+
+	template <vector_type T>
 	uint32_t vector<T>::insert(uint32_t pos, T const& val, uint32_t count)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
+		// TODO don't use generic realloc, to prevent useless move/copy
 		if (cap_ < size_ + count)
 		{
 			if (!cap_)
@@ -382,6 +430,7 @@ namespace mc
 	uint32_t vector<T>::insert(uint32_t pos, [[maybe_unused]] T&& val)
 		requires move_constructible<T> && move_assignable<T>
 	{
+		// TODO don't use generic realloc, to prevent useless move/copy
 		if (size_ + 1 < cap_)
 		{
 			if (!cap_)
@@ -396,22 +445,13 @@ namespace mc
 		}
 		else
 		{
-			for (uint32_t i {size_}; i > size_ - 1; --i)
-				if constexpr (requires { requires move_constructible<T>; })
-					new (arr_ + i) T(static_cast<T&&>(arr_[i - 1]));
-				else
-					new (arr_ + i) T(arr_[i - 1]);
+			if constexpr (requires { requires move_constructible<T>; })
+				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
+			else
+				new (arr_ + size_) T(arr_[size_ - 1]);
 
 			for (uint32_t i {size_ - 1}; i > pos; --i)
-			{
-				if constexpr (requires { requires move_assignable<T>; })
-					arr_[i] = static_cast<T&&>(arr_[i - 1]);
-				else
-				{
-					arr_[i] = arr_[i - 1];
-					arr_[i - 1].~T();
-				}
-			}
+				arr_[i] = static_cast<T&&>(arr_[i - 1]);
 
 			arr_[pos] = static_cast<T&&>(val);
 		}
@@ -425,6 +465,7 @@ namespace mc
 	                           [[maybe_unused]] std::initializer_list<T> ilist)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
+		// TODO don't use generic realloc, to prevent useless move/copy
 		if (cap_ < size_ + ilist.size())
 		{
 			if (!cap_)
