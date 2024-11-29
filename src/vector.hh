@@ -270,7 +270,18 @@ namespace mc
 		if (size > size_)
 		{
 			if (size > cap_)
-				realloc(size);
+			{
+				if (!cap_)
+					realloc(size);
+				else
+				{
+					uint32_t new_cap = cap_;
+					while (new_cap < size)
+						new_cap *= 2;
+
+					realloc(new_cap);
+				}
+			}
 
 			for (uint32_t i {size_}; i < size; ++i)
 				new (arr_ + i) T;
@@ -291,7 +302,18 @@ namespace mc
 		if (size > size_)
 		{
 			if (size > cap_)
-				realloc(size_);
+			{
+				if (!cap_)
+					realloc(size);
+				else
+				{
+					uint32_t new_cap = cap_;
+					while (new_cap < size)
+						new_cap *= 2;
+
+					realloc(new_cap);
+				}
+			}
 
 			for (uint32_t i {size_}; i < size; ++i)
 				new (arr_ + i) T(val);
@@ -310,7 +332,7 @@ namespace mc
 	T& vector<T>::emplace_back(Args&&... args)
 		requires constructible_from<T, Args...>
 	{
-		if (size_ + 1 < cap_)
+		if (size_ + 1 > cap_)
 		{
 			if (!cap_)
 				realloc(1);
@@ -337,7 +359,7 @@ namespace mc
 		requires constructible_from<T, Args...>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
-		if (size_ + 1 < cap_)
+		if (size_ + 1 > cap_)
 		{
 			if (!cap_)
 				realloc(1);
@@ -371,6 +393,7 @@ namespace mc
 				arr_[pos].~T();
 			new (arr_ + pos) T(static_cast<Args&&>(args)...);
 		}
+		++size_;
 		return pos;
 	}
 
@@ -379,7 +402,7 @@ namespace mc
 		requires copy_constructible<T> && copy_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
-		if (cap_ < size_ + count)
+		if (size_ + count > cap_)
 		{
 			if (!cap_)
 				realloc(count);
@@ -431,7 +454,7 @@ namespace mc
 		requires move_constructible<T> && move_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
-		if (size_ + 1 < cap_)
+		if (size_ + 1 > cap_)
 		{
 			if (!cap_)
 				realloc(1);
@@ -466,7 +489,7 @@ namespace mc
 		requires copy_constructible<T> && copy_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
-		if (cap_ < size_ + ilist.size())
+		if (size_ + ilist.size() > cap_)
 		{
 			if (!cap_)
 				realloc(ilist.size());
@@ -482,7 +505,7 @@ namespace mc
 
 		if (pos == size_)
 		{
-			T* it = ilist.begin();
+			T const* it = ilist.begin();
 			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
 			{
 				new (arr_ + i) T(*it);
@@ -497,7 +520,7 @@ namespace mc
 				else
 					new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
 
-			for (uint32_t i {size_ - ilist.size()}; i > pos; --i)
+			for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > pos; --i)
 			{
 				if constexpr (requires { requires move_assignable<T>; })
 					arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
@@ -508,7 +531,7 @@ namespace mc
 				}
 			}
 
-			T* it = ilist.begin();
+			T const* it = ilist.begin();
 			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
 			{
 				arr_[i] = *it;
