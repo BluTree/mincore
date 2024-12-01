@@ -30,7 +30,7 @@ int unit_state::run_tests()
 			       groups[i]->test_size);
 		}
 		else
-			printf("[" GREEN "passed" DEFAULT "]   (%d/%d)\n", groups[i]->test_size,
+			printf("[" GREEN "pass" DEFAULT "]   (%d/%d)\n\n", groups[i]->test_size,
 			       groups[i]->test_size);
 	}
 
@@ -81,7 +81,7 @@ void group_base::run()
 			++tests_fail_cnt;
 		}
 		else
-			printf("|-[" GREEN "passed" DEFAULT "] (%d/%d)\n", tests[i]->checks_cnt,
+			printf("|-[" GREEN "pass" DEFAULT "] (%d/%d)\n", tests[i]->checks_cnt,
 			       tests[i]->checks_cnt);
 	}
 }

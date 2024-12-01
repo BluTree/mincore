@@ -18,7 +18,7 @@ local tests_exe = mg.project({
 	type = mg.project_type.executable,
 	sources = {"tests/**.cc"},
 	includes = {"src"},
-	compile_options = {"-g", "-O0", "-Wall", "-Wextra", "-Werror", "-fno-char8_t", "-nostdinc++", "--std=c++20"},
+	compile_options = {"-g", "-O0", "-Wall", "-Wextra", "-Werror", "-fno-char8_t", "-nostdinc++", "--std=c++20", "-D_CRT_SECURE_NO_WARNINGS"},
 	link_options = {"-fuse-ld=lld", "-g"},
 	dependencies = {mincore}
 })

@@ -38,6 +38,8 @@ namespace mc
 		bool     empty() const;
 		uint32_t size() const;
 		uint32_t capacity() const;
+		T*       data();
+		T const* data() const;
 
 		T&       operator[](uint32_t pos);
 		T const& operator[](uint32_t pos) const;
@@ -205,6 +207,18 @@ namespace mc
 	}
 
 	template <vector_type T>
+	T* vector<T>::data()
+	{
+		return arr_;
+	}
+
+	template <vector_type T>
+	T const* vector<T>::data() const
+	{
+		return arr_;
+	}
+
+	template <vector_type T>
 	T& vector<T>::operator[](uint32_t pos)
 	{
 		return arr_[pos];
@@ -219,25 +233,25 @@ namespace mc
 	template <vector_type T>
 	T& vector<T>::front()
 	{
-		return arr_;
+		return arr_[0];
 	}
 
 	template <vector_type T>
 	T const& vector<T>::front() const
 	{
-		return arr_;
+		return arr_[0];
 	}
 
 	template <vector_type T>
 	T& vector<T>::back()
 	{
-		return arr_ + size_;
+		return arr_[size_ - 1];
 	}
 
 	template <vector_type T>
 	T const& vector<T>::back() const
 	{
-		return arr_ + size_;
+		return arr_[size_ - 1];
 	}
 
 	template <vector_type T>
