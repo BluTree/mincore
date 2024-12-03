@@ -20,7 +20,18 @@ namespace mc
 		string(string const& other, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		string(std::initializer_list<char> ilist);
 
-		uint32_t size() const;
+		bool        empty() const;
+		uint32_t    size() const;
+		uint32_t    capacity() const;
+		char*       data() &;
+		char const* data() const&;
+
+		char&       operator[](uint32_t pos) &;
+		char const& operator[](uint32_t pos) const&;
+		char&       front() &;
+		char const& front() const&;
+		char&       back() &;
+		char const& back() const&;
 
 	private:
 		static constexpr uint32_t small_size = 12;

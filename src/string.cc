@@ -160,8 +160,64 @@ namespace mc
 		}
 	}
 
+	bool string::empty() const
+	{
+		return len_ == 0;
+	}
+
 	uint32_t string::size() const
 	{
 		return len_;
+	}
+
+	uint32_t string::capacity() const
+	{
+		return is_large_ ? large_.cap_ : small_size;
+	}
+
+	char* string::data() &
+	{
+		return is_large_ ? large_.str_ : small_.str_;
+	}
+
+	char const* string::data() const&
+	{
+		return is_large_ ? large_.str_ : small_.str_;
+	}
+
+	char& string::operator[](uint32_t pos) &
+	{
+		char* buf = is_large_ ? large_.str_ : small_.str_;
+		return buf[pos];
+	}
+
+	char const& string::operator[](uint32_t pos) const&
+	{
+		char const* buf = is_large_ ? large_.str_ : small_.str_;
+		return buf[pos];
+	}
+
+	char& string::front() &
+	{
+		char* buf = is_large_ ? large_.str_ : small_.str_;
+		return *buf;
+	}
+
+	char const& string::front() const&
+	{
+		char const* buf = is_large_ ? large_.str_ : small_.str_;
+		return *buf;
+	}
+
+	char& string::back() &
+	{
+		char* buf = is_large_ ? large_.str_ : small_.str_;
+		return buf[len_ - 1];
+	}
+
+	char const& string::back() const&
+	{
+		char const* buf = is_large_ ? large_.str_ : small_.str_;
+		return buf[len_ - 1];
 	}
 }
