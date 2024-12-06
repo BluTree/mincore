@@ -19,6 +19,13 @@ namespace mc
 		string(string&& other);
 		string(string const& other, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		string(std::initializer_list<char> ilist);
+		~string();
+
+		string& operator=(char* str);
+		string& operator=(string_view str);
+		string& operator=(string const& other);
+		string& operator=(string&& other);
+		string& operator=(std::initializer_list<char> ilist);
 
 		bool        empty() const;
 		uint32_t    size() const;
@@ -33,8 +40,15 @@ namespace mc
 		char&       back() &;
 		char const& back() const&;
 
+		void clear();
+		void reserve(uint32_t cap);
+		void fit();
+
 	private:
-		static constexpr uint32_t small_size = 12;
+		static constexpr uint32_t small_size = 16;
+		static constexpr uint32_t is_large_flag = 0x8000'0000;
+
+		bool is_large() const;
 
 		union
 		{
@@ -51,7 +65,6 @@ namespace mc
 			} small_;
 		};
 
-		uint32_t len_ : 31 {0};
-		bool     is_large_ : 1 {false};
+		uint32_t len_ {0};
 	};
 }

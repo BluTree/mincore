@@ -49,7 +49,7 @@ namespace mc
 		T const& back() const&;
 
 		void clear();
-		void reserve(uint32_t cap_);
+		void reserve(uint32_t cap);
 		void fit();
 
 		void resize(uint32_t size)
