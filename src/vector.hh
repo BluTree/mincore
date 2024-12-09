@@ -464,7 +464,7 @@ namespace mc
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::insert(uint32_t pos, [[maybe_unused]] T&& val)
+	uint32_t vector<T>::insert(uint32_t pos, T&& val)
 		requires move_constructible<T> && move_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -498,8 +498,7 @@ namespace mc
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::insert(uint32_t                                  pos,
-	                           [[maybe_unused]] std::initializer_list<T> ilist)
+	uint32_t vector<T>::insert(uint32_t pos, std::initializer_list<T> ilist)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -558,7 +557,7 @@ namespace mc
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::erase(uint32_t pos, [[maybe_unused]] uint32_t count)
+	uint32_t vector<T>::erase(uint32_t pos, uint32_t count)
 		requires move_assignable<T>
 	{
 		for (uint32_t i {pos}; i < size_ - count; ++i)

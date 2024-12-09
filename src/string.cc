@@ -13,7 +13,25 @@ namespace mc
 	: small_ {0}
 	{}
 
-	string::string(char* str, uint32_t count)
+	string::string(uint32_t count, char c)
+	: len_ {count & ~is_large_flag}
+	{
+		if (len_ < small_size)
+		{
+			memset(small_.str_, c, len_);
+			small_.str_[len_] = '\0';
+		}
+		else
+		{
+			large_.str_ = reinterpret_cast<char*>(alloc(len_ + 1, alignof(char)));
+			large_.cap_ = len_;
+			memset(large_.str_, c, len_);
+			large_.str_[len_] = '\0';
+			len_ |= is_large_flag;
+		}
+	}
+
+	string::string(char const* str, uint32_t count)
 	{
 		if (count == UINT32_MAX)
 			len_ = strlen(str);
@@ -25,7 +43,7 @@ namespace mc
 		if (len_ < small_size)
 		{
 			memcpy(small_.str_, str, len_);
-			small_.str_[len_ + 1] = '\0';
+			small_.str_[len_] = '\0';
 		}
 		else
 		{
@@ -33,7 +51,7 @@ namespace mc
 			large_.cap_ = len_;
 
 			memcpy(large_.str_, str, len_);
-			large_.str_[len_ + 1] = '\0';
+			large_.str_[len_] = '\0';
 			len_ |= is_large_flag;
 		}
 	}
@@ -41,16 +59,16 @@ namespace mc
 	string::string(string_view str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			len_ = str.size() - pos;
+			len_ = str.size();
 		else
-			len_ = count - pos;
+			len_ = count;
 
 		len_ &= ~is_large_flag;
 
 		if (len_ < small_size)
 		{
 			memcpy(small_.str_, str.data() + pos, len_);
-			small_.str_[len_ + 1] = '\0';
+			small_.str_[len_] = '\0';
 		}
 		else
 		{
@@ -58,36 +76,8 @@ namespace mc
 			large_.cap_ = len_;
 
 			memcpy(large_.str_, str.data() + pos, len_);
-			large_.str_[len_ + 1] = '\0';
+			large_.str_[len_] = '\0';
 			len_ |= is_large_flag;
-		}
-	}
-
-	string::string(string const& other)
-	: len_ {other.len_}
-	{
-		len_ &= ~is_large_flag;
-		if (other.is_large())
-		{
-			if (len_ < small_size)
-			{
-				memcpy(small_.str_, other.large_.str_, len_);
-				small_.str_[len_ + 1] = '\0';
-			}
-			else
-			{
-				large_.str_ = reinterpret_cast<char*>(alloc(len_ + 1, alignof(char)));
-				large_.cap_ = len_;
-
-				memcpy(large_.str_, other.large_.str_, len_);
-				large_.str_[len_ + 1] = '\0';
-				len_ |= is_large_flag;
-			}
-		}
-		else
-		{
-			memcpy(small_.str_, other.small_.str_, len_);
-			small_.str_[len_ + 1] = '\0';
 		}
 	}
 
@@ -109,9 +99,9 @@ namespace mc
 	string::string(string const& other, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			len_ = other.size() - pos;
+			len_ = other.size();
 		else
-			len_ = count - pos;
+			len_ = count;
 
 		len_ &= ~is_large_flag;
 
@@ -119,23 +109,23 @@ namespace mc
 		{
 			if (len_ < small_size)
 			{
-				memcpy(small_.str_, other.large_.str_, len_);
-				small_.str_[len_ + 1] = '\0';
+				memcpy(small_.str_, other.large_.str_ + pos, len_);
+				small_.str_[len_] = '\0';
 			}
 			else
 			{
 				large_.str_ = reinterpret_cast<char*>(alloc(len_ + 1, alignof(char)));
 				large_.cap_ = len_;
 
-				memcpy(large_.str_, other.large_.str_, len_);
-				large_.str_[len_ + 1] = '\0';
+				memcpy(large_.str_, other.large_.str_ + pos, len_);
+				large_.str_[len_] = '\0';
 				len_ |= is_large_flag;
 			}
 		}
 		else
 		{
 			memcpy(small_.str_, other.small_.str_, len_);
-			small_.str_[len_ + 1] = '\0';
+			small_.str_[len_] = '\0';
 		}
 	}
 
@@ -153,7 +143,7 @@ namespace mc
 			large_.cap_ = len_;
 
 			memcpy(large_.str_, ilist.begin(), len_);
-			large_.str_[len_ + 1] = '\0';
+			large_.str_[len_] = '\0';
 			len_ |= is_large_flag;
 		}
 	}
@@ -162,6 +152,202 @@ namespace mc
 	{
 		if (is_large())
 			free(large_.str_, large_.cap_ + 1, alignof(char));
+	}
+
+	string& string::operator=(char const* str)
+	{
+		uint32_t str_len = static_cast<uint32_t>(strlen(str)) & ~is_large_flag;
+
+		if (is_large())
+		{
+			if (str_len >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < str_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, str, str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else if (str_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
+
+			free(large_.str_, large_.cap_, alignof(char));
+			large_.cap_ = str_len;
+			large_.str_ = new_str;
+			memcpy(large_.str_, str, str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, str, str_len);
+			small_.str_[str_len] = '\0';
+			len_ = str_len;
+		}
+
+		return *this;
+	}
+
+	string& string::operator=(string_view str)
+	{
+		uint32_t str_len = str.size() & ~is_large_flag;
+
+		if (is_large())
+		{
+			if (str_len >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < str_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, str.data(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else if (str_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
+
+			free(large_.str_, large_.cap_, alignof(char));
+			large_.cap_ = str_len;
+			large_.str_ = new_str;
+			memcpy(large_.str_, str.data(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, str.data(), str_len);
+			small_.str_[str_len] = '\0';
+			len_ = str_len;
+		}
+
+		return *this;
+	}
+
+	string& string::operator=(string const& other)
+	{
+		uint32_t str_len = other.len_ & ~is_large_flag;
+
+		if (is_large())
+		{
+			if (str_len >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < str_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, other.data(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else if (str_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
+
+			free(large_.str_, large_.cap_, alignof(char));
+			large_.cap_ = str_len;
+			large_.str_ = new_str;
+			memcpy(large_.str_, other.data(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, other.data(), str_len);
+			small_.str_[str_len] = '\0';
+			len_ = str_len;
+		}
+
+		return *this;
+	}
+
+	string& string::operator=(string&& other)
+	{
+		if (is_large())
+			free(large_.str_, large_.cap_ + 1, alignof(char));
+
+		len_ = other.len_;
+		if (is_large())
+		{
+			large_.str_ = other.large_.str_;
+			large_.cap_ = other.large_.cap_;
+		}
+		else
+		{
+			memcpy(small_.str_, other.small_.str_, len_);
+		}
+
+		other.len_ = 0;
+		return *this;
+	}
+
+	string& string::operator=(std::initializer_list<char> ilist)
+	{
+		uint32_t str_len = static_cast<uint32_t>(ilist.size()) & ~is_large_flag;
+
+		if (is_large())
+		{
+			if (str_len >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < str_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, ilist.begin(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else if (str_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
+
+			free(large_.str_, large_.cap_, alignof(char));
+			large_.cap_ = str_len;
+			large_.str_ = new_str;
+			memcpy(large_.str_, ilist.begin(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, ilist.begin(), str_len);
+			small_.str_[str_len] = '\0';
+			len_ = str_len;
+		}
+
+		return *this;
 	}
 
 	bool string::empty() const
@@ -176,7 +362,7 @@ namespace mc
 
 	uint32_t string::capacity() const
 	{
-		return is_large() ? large_.cap_ : small_size;
+		return is_large() ? large_.cap_ : small_size - 1;
 	}
 
 	char* string::data() &

@@ -13,15 +13,14 @@ namespace mc
 		string();
 		string(uint32_t count, char c);
 		// TODO ctor first last
-		string(char* str, uint32_t count = UINT32_MAX);
+		string(char const* str, uint32_t count = UINT32_MAX);
 		string(string_view str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
-		string(string const& other);
-		string(string&& other);
 		string(string const& other, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		string(std::initializer_list<char> ilist);
+		string(string&& other);
 		~string();
 
-		string& operator=(char* str);
+		string& operator=(char const* str);
 		string& operator=(string_view str);
 		string& operator=(string const& other);
 		string& operator=(string&& other);
