@@ -227,7 +227,7 @@ void print_check_error(T1 const&   a,
 	char buf1[64], buf2[64];
 	bool need_print_a = print_value(buf1, a_str, a);
 	bool need_print_b = print_value(buf2, b_str, b);
-	printf("||-[" RED "failed" DEFAULT "]: ");
+	printf("||-[" RED "fail" DEFAULT "]: ");
 	if (need_print_a)
 		printf("%s(%s) ", a_str, buf1);
 	else

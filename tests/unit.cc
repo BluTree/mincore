@@ -25,7 +25,7 @@ int unit_state::run_tests()
 		if (groups[i]->tests_fail_cnt)
 		{
 			success = false;
-			printf("[" RED "failed" DEFAULT "] (%d/%d)\n",
+			printf("[" RED "fail" DEFAULT "] (%d/%d)\n",
 			       groups[i]->test_size - groups[i]->tests_fail_cnt,
 			       groups[i]->test_size);
 		}
@@ -33,6 +33,8 @@ int unit_state::run_tests()
 			printf("[" GREEN "pass" DEFAULT "]   (%d/%d)\n\n", groups[i]->test_size,
 			       groups[i]->test_size);
 	}
+
+	// TODO Summary
 
 	return success;
 }
@@ -75,7 +77,7 @@ void group_base::run()
 		tests[i]->run();
 		if (tests[i]->checks_fail_cnt)
 		{
-			printf("|-[" RED "failed" DEFAULT "] (%d/%d)\n",
+			printf("|-[" RED "fail" DEFAULT "] (%d/%d)\n",
 			       tests[i]->checks_cnt - tests[i]->checks_fail_cnt,
 			       tests[i]->checks_cnt);
 			++tests_fail_cnt;
