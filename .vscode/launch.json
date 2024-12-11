@@ -14,7 +14,8 @@
 			"cwd": "${workspaceFolder}/build/bin",
 			"environment": [],
 			"console": "integratedTerminal",
-			"preLaunchTask": "build"
+			"preLaunchTask": "build",
+			"postDebugTask": "generate lcov"
 		},
 		{
 			"name": "mincore tests (lldb)",
@@ -24,7 +25,8 @@
 			"args": [],
 			"cwd": "${workspaceFolder}/build/bin",
 			"console": "integratedTerminal",
-			"preLaunchTask": "build"
+			"preLaunchTask": "build",
+			"postDebugTask": "generate lcov"
 		}
 
 	]

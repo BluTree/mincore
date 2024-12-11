@@ -16,6 +16,22 @@
 				"showReuseMessage": true,
 				"clear": false
 			}
+		},
+		{
+			"label": "generate lcov",
+			"type": "shell",
+			"command":[
+				"llvm-profdata merge -sparse build/bin/default.profraw -o build/bin/default.profdata &&",
+				"llvm-cov export --format=lcov --instr-profile build/bin/default.profdata build/bin/tests.exe > build/bin/lcov.info "
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			}
 		}
 	]
 }

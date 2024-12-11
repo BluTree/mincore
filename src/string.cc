@@ -135,7 +135,7 @@ namespace mc
 		if (len_ < small_size)
 		{
 			memcpy(small_.str_, ilist.begin(), len_);
-			small_.str_[len_ + 1] = '\0';
+			small_.str_[len_] = '\0';
 		}
 		else
 		{

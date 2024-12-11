@@ -1,5 +1,6 @@
 {
 	"[cpp]": {
 		"editor.formatOnSave": true
-	}
+	},
+	"coverage-gutters.coverageBaseDir": "build/bin/**"
 }
