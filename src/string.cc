@@ -181,7 +181,6 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
 
-			free(large_.str_, large_.cap_, alignof(char));
 			large_.cap_ = str_len;
 			large_.str_ = new_str;
 			memcpy(large_.str_, str, str_len);
@@ -225,7 +224,6 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
 
-			free(large_.str_, large_.cap_, alignof(char));
 			large_.cap_ = str_len;
 			large_.str_ = new_str;
 			memcpy(large_.str_, str.data(), str_len);
@@ -269,7 +267,6 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
 
-			free(large_.str_, large_.cap_, alignof(char));
 			large_.cap_ = str_len;
 			large_.str_ = new_str;
 			memcpy(large_.str_, other.data(), str_len);
@@ -299,7 +296,7 @@ namespace mc
 		}
 		else
 		{
-			memcpy(small_.str_, other.small_.str_, len_);
+			memcpy(small_.str_, other.small_.str_, len_ + 1);
 		}
 
 		other.len_ = 0;
@@ -333,7 +330,6 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
 
-			free(large_.str_, large_.cap_, alignof(char));
 			large_.cap_ = str_len;
 			large_.str_ = new_str;
 			memcpy(large_.str_, ilist.begin(), str_len);

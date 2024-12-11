@@ -78,4 +78,40 @@ GROUP(string)
 		CHECK_EQ(str13.capacity(), 63)
 		CHECK_EQ(strcmp(str13.data(), long_str), 0);
 	}
+
+	TEST(assignment)
+	{
+		mc::string str0;
+		CHECK_EQ(str0.size(), 0);
+
+		str0 = "Hello World!";
+		CHECK_EQ(str0.size(), 12);
+		CHECK_EQ(strcmp(str0.data(), "Hello World!"), 0);
+
+		str0 = mc::string_view("This is a longer Hello World!");
+		CHECK_EQ(str0.size(), 29);
+		CHECK_EQ(str0.capacity(), 29);
+		CHECK_EQ(strcmp(str0.data(), "This is a longer Hello World!"), 0);
+
+		mc::string str1("Large string for test");
+		CHECK_EQ(str1.size(), 21);
+
+		str1 = str0;
+		CHECK_EQ(str1.size(), 29);
+		CHECK_EQ(str1.capacity(), 42);
+		CHECK_EQ(strcmp(str1.data(), "This is a longer Hello World!"), 0);
+
+		mc::string str2;
+		CHECK_EQ(str2.size(), 0);
+
+		str2 = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
+		CHECK_EQ(str2.size(), 12);
+		CHECK_EQ(strcmp(str2.data(), "Hello World!"), 0);
+
+		str2 = static_cast<mc::string&&>(str1);
+		CHECK_EQ(str2.size(), 29);
+		CHECK_EQ(str2.capacity(), 42);
+		CHECK_EQ(strcmp(str2.data(), "This is a longer Hello World!"), 0);
+		CHECK_EQ(str1.size(), 0);
+	}
 }
