@@ -43,6 +43,14 @@ namespace mc
 		void reserve(uint32_t cap);
 		void fit();
 
+		void assign(uint32_t count, char c);
+		// TODO assign first last
+		void assign(char const* str, uint32_t count = UINT32_MAX);
+		void assign(string_view str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
+		void assign(string const& other, uint32_t pos = 0, uint32_t count = UINT32_MAX);
+		void assign(std::initializer_list<char> ilist);
+		void assign(string&& other);
+
 	private:
 		static constexpr uint32_t small_size = 16;
 		static constexpr uint32_t is_large_flag = 0x8000'0000;

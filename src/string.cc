@@ -7,7 +7,7 @@
 namespace mc
 {
 	// The user-defined ctor is needed because clang and gcc (< 13) misunderstand the
-	// union not being trivially constructable.
+	// union not being trivially constructible.
 	// See https://github.com/llvm/llvm-project/pull/82407 for the clang fix.
 	string::string()
 	: small_ {0}
@@ -459,6 +459,236 @@ namespace mc
 				large_.cap_ = len;
 			}
 		}
+	}
+
+	void string::assign(uint32_t count, char c)
+	{
+		count &= ~is_large_flag;
+
+		if (is_large())
+		{
+			if (count >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < count)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memset(large_.str_, c, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else if (count >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(count + 1, alignof(char)));
+
+			large_.cap_ = count;
+			large_.str_ = new_str;
+			memset(large_.str_, c, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else
+		{
+			memset(small_.str_, c, count);
+			small_.str_[count] = '\0';
+			len_ = count;
+		}
+	}
+
+	void string::assign(char const* str, uint32_t count)
+	{
+		count &= ~is_large_flag;
+
+		if (is_large())
+		{
+			if (count >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < count)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, str, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else if (count >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(count + 1, alignof(char)));
+
+			large_.cap_ = count;
+			large_.str_ = new_str;
+			memcpy(large_.str_, str, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, str, count);
+			small_.str_[count] = '\0';
+			len_ = count;
+		}
+	}
+
+	void string::assign(string_view str, uint32_t pos, uint32_t count)
+	{
+		if (count == UINT32_MAX)
+			count = str.size();
+
+		count &= ~is_large_flag;
+
+		if (is_large())
+		{
+			if (count >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < count)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, str.data() + pos, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else if (count >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(count + 1, alignof(char)));
+
+			large_.cap_ = count;
+			large_.str_ = new_str;
+			memcpy(large_.str_, str.data() + pos, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, str.data() + pos, count);
+			small_.str_[count] = '\0';
+			len_ = count;
+		}
+	}
+
+	void string::assign(string const& other, uint32_t pos, uint32_t count)
+	{
+		if (count == UINT32_MAX)
+			count = other.size();
+
+		count &= ~is_large_flag;
+
+		if (is_large())
+		{
+			if (count >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < count)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, other.data() + pos, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else if (count >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(count + 1, alignof(char)));
+
+			large_.cap_ = count;
+			large_.str_ = new_str;
+			memcpy(large_.str_, other.data() + pos, count);
+			large_.str_[count] = '\0';
+			len_ = count | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, other.data() + pos, count);
+			small_.str_[count] = '\0';
+			len_ = count;
+		}
+	}
+
+	void string::assign(std::initializer_list<char> ilist)
+	{
+		uint32_t str_len = static_cast<uint32_t>(ilist.size()) & ~is_large_flag;
+
+		if (is_large())
+		{
+			if (str_len >= large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < str_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				free(large_.str_, large_.cap_, alignof(char));
+				large_.cap_ = new_cap;
+				large_.str_ = new_str;
+			}
+			memcpy(large_.str_, ilist.begin(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else if (str_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(str_len + 1, alignof(char)));
+
+			large_.cap_ = str_len;
+			large_.str_ = new_str;
+			memcpy(large_.str_, ilist.begin(), str_len);
+			large_.str_[str_len] = '\0';
+			len_ = str_len | is_large_flag;
+		}
+		else
+		{
+			memcpy(small_.str_, ilist.begin(), str_len);
+			small_.str_[str_len] = '\0';
+			len_ = str_len;
+		}
+	}
+
+	void string::assign(string&& other)
+	{
+		if (is_large())
+			free(large_.str_, large_.cap_ + 1, alignof(char));
+
+		len_ = other.len_;
+		if (is_large())
+		{
+			large_.str_ = other.large_.str_;
+			large_.cap_ = other.large_.cap_;
+		}
+		else
+		{
+			memcpy(small_.str_, other.small_.str_, len_ + 1);
+		}
+
+		other.len_ = 0;
 	}
 
 	bool string::is_large() const

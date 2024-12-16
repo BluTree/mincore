@@ -105,7 +105,7 @@ GROUP(vector)
 		mc::vector<int32_t> vec5(static_cast<mc::vector<int32_t>&&>(vec4));
 		CHECK_EQ(vec5.size(), 5);
 		CHECK_EQ(vec5.capacity(), 5);
-		CHECK_EQ(vec4.size(), 0);
+		CHECK_EQ(vec4.size(), 0); // NOLINT(clang-analyzer-cplusplus.Move)
 		CHECK_EQ(vec4.capacity(), 0);
 		for (int32_t i {0}; i < static_cast<int32_t>(vec5.size()); ++i)
 			CHECK_EQ(vec5[i], i)
@@ -131,7 +131,7 @@ GROUP(vector)
 		mc::vector<vec_test_copy> vec9(static_cast<mc::vector<vec_test_copy>&&>(vec8));
 		CHECK_EQ(vec9.size(), 5);
 		CHECK_EQ(vec9.capacity(), 5);
-		CHECK_EQ(vec8.size(), 0);
+		CHECK_EQ(vec8.size(), 0); // NOLINT(clang-analyzer-cplusplus.Move)
 		CHECK_EQ(vec8.capacity(), 0);
 		for (int32_t i {0}; i < static_cast<int32_t>(vec9.size()); ++i)
 			CHECK_EQ(vec9[i].val_, i)
