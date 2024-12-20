@@ -130,7 +130,7 @@ GROUP(string)
 
 		str0.reserve(18);
 		CHECK_EQ(str0.size(), 0);
-		CHECK_EQ(str0.capacity(), 15);
+		CHECK_EQ(str0.capacity(), 18);
 
 		str0.reserve(32);
 		CHECK_EQ(str0.size(), 0);

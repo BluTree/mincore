@@ -1,9 +1,10 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include "alloc.hh"
+
+using nullptr_t = decltype(nullptr);
 
 namespace mc
 {
