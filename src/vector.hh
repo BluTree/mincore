@@ -30,19 +30,14 @@ namespace mc
 		vector(vector&& other);
 		~vector();
 
-		vector& operator=(vector const& other)
-			requires copy_constructible<T>;
-		// Doesn't need move_constructible<T> since arr_ is moved, not its content
-		vector& operator=(vector&& other);
-
 		bool     empty() const;
 		uint32_t size() const;
 		uint32_t capacity() const;
 		T*       data() &;
 		T const* data() const&;
 
-		T&       operator[](uint32_t pos) &;
-		T const& operator[](uint32_t pos) const&;
+		T&       operator[](uint32_t idx) &;
+		T const& operator[](uint32_t idx) const&;
 		T&       front() &;
 		T const& front() const&;
 		T&       back() &;
@@ -51,6 +46,11 @@ namespace mc
 		void clear();
 		void reserve(uint32_t cap);
 		void fit();
+
+		vector& operator=(vector const& other)
+			requires copy_constructible<T>;
+		// Doesn't need move_constructible<T> since arr_ is moved, not its content
+		vector& operator=(vector&& other);
 
 		void resize(uint32_t size)
 			requires default_constructible<T>;
@@ -63,18 +63,18 @@ namespace mc
 		void pop_back();
 
 		template <typename... Args>
-		uint32_t emplace(uint32_t pos, Args&&... args)
+		uint32_t emplace(uint32_t idx, Args&&... args)
 			requires constructible_from<T, Args...>;
 
-		uint32_t insert(uint32_t pos, T const& val, uint32_t count = 1)
+		uint32_t insert(uint32_t idx, T const& val, uint32_t count = 1)
 			requires copy_constructible<T> && copy_assignable<T>;
-		uint32_t insert(uint32_t pos, T&& val)
+		uint32_t insert(uint32_t idx, T&& val)
 			requires move_constructible<T> && move_assignable<T>;
-		uint32_t insert(uint32_t pos, std::initializer_list<T> ilist)
+		uint32_t insert(uint32_t idx, std::initializer_list<T> ilist)
 			requires copy_constructible<T> && copy_assignable<T>;
 		// TODO Insert first last
 
-		uint32_t erase(uint32_t pos, uint32_t count = 1)
+		uint32_t erase(uint32_t idx, uint32_t count = 1)
 			requires move_assignable<T>;
 
 	private:
@@ -144,41 +144,6 @@ namespace mc
 	}
 
 	template <vector_type T>
-	vector<T>& vector<T>::operator=(vector const& other)
-		requires copy_constructible<T>
-	{
-		for (uint32_t i {0}; i < size_; ++i)
-			arr_[i].~T();
-
-		if (arr_)
-			free(arr_, cap_, alignof(T));
-
-		size_ = other.size_;
-		cap_ = other.cap_;
-		arr_ = reinterpret_cast<T*>(alloc(sizeof(T) * cap_, alignof(T)));
-		for (uint32_t i {0}; i < size_; ++i)
-			new (arr_ + i) T(other.arr_[i]);
-	}
-
-	template <vector_type T>
-	vector<T>& vector<T>::operator=(vector&& other)
-	{
-		for (uint32_t i {0}; i < size_; ++i)
-			arr_[i].~T();
-
-		if (arr_)
-			free(arr_, cap_, alignof(T));
-
-		arr_ = other.arr_;
-		size_ = other.size_;
-		cap_ = other.cap_;
-
-		other.arr_ = nullptr;
-		other.size_ = 0;
-		other.cap_ = 0;
-	}
-
-	template <vector_type T>
 	vector<T>::~vector()
 	{
 		for (uint32_t i {0}; i < size_; ++i)
@@ -219,15 +184,15 @@ namespace mc
 	}
 
 	template <vector_type T>
-	T& vector<T>::operator[](uint32_t pos) &
+	T& vector<T>::operator[](uint32_t idx) &
 	{
-		return arr_[pos];
+		return arr_[idx];
 	}
 
 	template <vector_type T>
-	T const& vector<T>::operator[](uint32_t pos) const&
+	T const& vector<T>::operator[](uint32_t idx) const&
 	{
-		return arr_[pos];
+		return arr_[idx];
 	}
 
 	template <vector_type T>
@@ -275,6 +240,41 @@ namespace mc
 	{
 		if (cap_ > size_)
 			realloc(size_);
+	}
+
+	template <vector_type T>
+	vector<T>& vector<T>::operator=(vector const& other)
+		requires copy_constructible<T>
+	{
+		for (uint32_t i {0}; i < size_; ++i)
+			arr_[i].~T();
+
+		if (arr_)
+			free(arr_, cap_, alignof(T));
+
+		size_ = other.size_;
+		cap_ = other.cap_;
+		arr_ = reinterpret_cast<T*>(alloc(sizeof(T) * cap_, alignof(T)));
+		for (uint32_t i {0}; i < size_; ++i)
+			new (arr_ + i) T(other.arr_[i]);
+	}
+
+	template <vector_type T>
+	vector<T>& vector<T>::operator=(vector&& other)
+	{
+		for (uint32_t i {0}; i < size_; ++i)
+			arr_[i].~T();
+
+		if (arr_)
+			free(arr_, cap_, alignof(T));
+
+		arr_ = other.arr_;
+		size_ = other.size_;
+		cap_ = other.cap_;
+
+		other.arr_ = nullptr;
+		other.size_ = 0;
+		other.cap_ = 0;
 	}
 
 	template <vector_type T>
@@ -369,7 +369,7 @@ namespace mc
 
 	template <vector_type T>
 	template <typename... Args>
-	uint32_t vector<T>::emplace(uint32_t pos, Args&&... args)
+	uint32_t vector<T>::emplace(uint32_t idx, Args&&... args)
 		requires constructible_from<T, Args...>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -381,9 +381,9 @@ namespace mc
 				realloc(cap_ * 2);
 		}
 
-		if (pos == size_)
+		if (idx == size_)
 		{
-			new (arr_ + pos) T(static_cast<Args&&>(args)...);
+			new (arr_ + idx) T(static_cast<Args&&>(args)...);
 		}
 		else
 		{
@@ -392,7 +392,7 @@ namespace mc
 			else
 				new (arr_ + size_) T(arr_[size_ - 1]);
 
-			for (uint32_t i {size_ - 1}; i > pos; --i)
+			for (uint32_t i {size_ - 1}; i > idx; --i)
 			{
 				if constexpr (requires { requires move_assignable<T>; })
 					arr_[i] = static_cast<T&&>(arr_[i - 1]);
@@ -404,15 +404,15 @@ namespace mc
 			}
 
 			if constexpr (requires { requires move_assignable<T>; })
-				arr_[pos].~T();
-			new (arr_ + pos) T(static_cast<Args&&>(args)...);
+				arr_[idx].~T();
+			new (arr_ + idx) T(static_cast<Args&&>(args)...);
 		}
 		++size_;
-		return pos;
+		return idx;
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::insert(uint32_t pos, T const& val, uint32_t count)
+	uint32_t vector<T>::insert(uint32_t idx, T const& val, uint32_t count)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -430,9 +430,9 @@ namespace mc
 			}
 		}
 
-		if (pos == size_)
+		if (idx == size_)
 		{
-			for (uint32_t i {pos}; i < pos + count; ++i)
+			for (uint32_t i {idx}; i < idx + count; ++i)
 				new (arr_ + i) T(val);
 		}
 		else
@@ -443,7 +443,7 @@ namespace mc
 				else
 					new (arr_ + i - 1 + count) T(arr_[i - 1]);
 
-			for (uint32_t i {size_ - count}; i > pos; --i)
+			for (uint32_t i {size_ - count}; i > idx; --i)
 			{
 				if constexpr (requires { requires move_assignable<T>; })
 					arr_[i - 1 + count] = static_cast<T&&>(arr_[i - 1]);
@@ -454,17 +454,17 @@ namespace mc
 				}
 			}
 
-			for (uint32_t i {pos}; i < pos + count; ++i)
+			for (uint32_t i {idx}; i < idx + count; ++i)
 				arr_[i] = val;
 		}
 
 		size_ += count;
 
-		return pos;
+		return idx;
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::insert(uint32_t pos, T&& val)
+	uint32_t vector<T>::insert(uint32_t idx, T&& val)
 		requires move_constructible<T> && move_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -476,7 +476,7 @@ namespace mc
 				realloc(cap_ * 2);
 		}
 
-		if (pos == size_)
+		if (idx == size_)
 		{
 			new (arr_ + size_) T(static_cast<T&&>(val));
 		}
@@ -487,18 +487,18 @@ namespace mc
 			else
 				new (arr_ + size_) T(arr_[size_ - 1]);
 
-			for (uint32_t i {size_ - 1}; i > pos; --i)
+			for (uint32_t i {size_ - 1}; i > idx; --i)
 				arr_[i] = static_cast<T&&>(arr_[i - 1]);
 
-			arr_[pos] = static_cast<T&&>(val);
+			arr_[idx] = static_cast<T&&>(val);
 		}
 
 		++size_;
-		return pos;
+		return idx;
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::insert(uint32_t pos, std::initializer_list<T> ilist)
+	uint32_t vector<T>::insert(uint32_t idx, std::initializer_list<T> ilist)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
 		// TODO don't use generic realloc, to prevent useless move/copy
@@ -516,10 +516,10 @@ namespace mc
 			}
 		}
 
-		if (pos == size_)
+		if (idx == size_)
 		{
 			T const* it = ilist.begin();
-			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
+			for (uint32_t i {idx}; i < idx + ilist.size(); ++i)
 			{
 				new (arr_ + i) T(*it);
 				++it;
@@ -533,7 +533,7 @@ namespace mc
 				else
 					new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
 
-			for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > pos; --i)
+			for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > idx; --i)
 			{
 				if constexpr (requires { requires move_assignable<T>; })
 					arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
@@ -545,7 +545,7 @@ namespace mc
 			}
 
 			T const* it = ilist.begin();
-			for (uint32_t i {pos}; i < pos + ilist.size(); ++i)
+			for (uint32_t i {idx}; i < idx + ilist.size(); ++i)
 			{
 				arr_[i] = *it;
 				++it;
@@ -553,21 +553,21 @@ namespace mc
 		}
 
 		size_ += ilist.size();
-		return pos;
+		return idx;
 	}
 
 	template <vector_type T>
-	uint32_t vector<T>::erase(uint32_t pos, uint32_t count)
+	uint32_t vector<T>::erase(uint32_t idx, uint32_t count)
 		requires move_assignable<T>
 	{
-		for (uint32_t i {pos}; i < size_ - count; ++i)
+		for (uint32_t i {idx}; i < size_ - count; ++i)
 			arr_[i] = static_cast<T&&>(arr_[i + count]);
 
 		for (uint32_t i {size_ - count}; i < size_; ++i)
 			arr_[i].~T();
 
 		size_ -= count;
-		return pos;
+		return idx;
 	}
 
 	template <vector_type T>

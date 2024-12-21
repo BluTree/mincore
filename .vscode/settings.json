@@ -2,5 +2,13 @@
 	"[cpp]": {
 		"editor.formatOnSave": true
 	},
-	"coverage-gutters.coverageBaseDir": "build/bin/**"
+	"editor.rulers": [
+		90
+	],
+	"coverage-gutters.coverageBaseDir": "build/bin/**",
+	"files.associations": {
+		"*.sln": "xml",
+		"log": "log",
+		"initializer_list": "cpp"
+	}
 }

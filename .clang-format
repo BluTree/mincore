@@ -13,7 +13,7 @@ AllowShortCaseLabelsOnASingleLine: true
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations: Yes
-BinPackParameters: false
+BinPackParameters: true
 BraceWrapping:
   AfterCaseLabel:  true
   AfterClass:      true
@@ -43,6 +43,7 @@ IndentWidth: 4
 KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: All
 PackConstructorInitializers: Never
+PenaltyReturnTypeOnItsOwnLine: 100
 PointerAlignment: Left
 QualifierAlignment: Right
 ReflowComments: true

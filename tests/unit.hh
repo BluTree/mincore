@@ -36,7 +36,9 @@
 		print_check_error(a, b, #a, #b, "==", __LINE__, __FILE__);                       \
 	}                                                                                    \
 	else                                                                                 \
-		++checks_cnt;
+	{                                                                                    \
+		++checks_cnt;                                                                    \
+	}
 
 #define CHECK_NE(a, b)                                                                   \
 	if (a == b)                                                                          \
@@ -46,7 +48,9 @@
 		print_check_error(a, b, #a, #b, "!=", __LINE__, __FILE__);                       \
 	}                                                                                    \
 	else                                                                                 \
-		++checks_cnt
+	{                                                                                    \
+		++checks_cnt;                                                                    \
+	}
 
 #define CHECK_GT(a, b)                                                                   \
 	if (a <= b)                                                                          \
@@ -56,7 +60,9 @@
 		print_check_error(a, b, #a, #b, ">", __LINE__, __FILE__);                        \
 	}                                                                                    \
 	else                                                                                 \
-		++checks_cnt;
+	{                                                                                    \
+		++checks_cnt;                                                                    \
+	}
 
 #define CHECK_GE(a, b)                                                                   \
 	if (a < b)                                                                           \
@@ -78,7 +84,9 @@
 		print_check_error(a, b, #a, #b, "<", __LINE__, __FILE__);                        \
 	}                                                                                    \
 	else                                                                                 \
-		++checks_cnt
+	{                                                                                    \
+		++checks_cnt;                                                                    \
+	}
 
 #define CHECK_LE(a, b)                                                                   \
 	if (a > b)                                                                           \
@@ -88,7 +96,9 @@
 		print_check_error(a, b, #a, #b, "<=", __LINE__, __FILE__);                       \
 	}                                                                                    \
 	else                                                                                 \
-		++checks_cnt;
+	{                                                                                    \
+		++checks_cnt;                                                                    \
+	}
 
 struct group_base;
 struct test_base;
@@ -183,7 +193,7 @@ bool print_value(char* buf, char const* val_str, T const& val)
 	}
 	else if constexpr (is_same_v<T, char>)
 	{
-		snprintf(buf, 64, "%c", val);
+		snprintf(buf, 64, "'%c'", val);
 		return strcmp(buf, val_str) != 0;
 	}
 	else if constexpr (is_same_v<T, char const*> || is_same_v<T, char*>)
