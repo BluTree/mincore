@@ -122,6 +122,50 @@ GROUP(string)
 		CHECK_EQ(str1.capacity(), 63)
 	}
 
+	TEST(resize)
+	{
+		mc::string str0;
+		CHECK_EQ(str0.size(), 0)
+		str0.resize(10);
+		CHECK_EQ(str0.size(), 10)
+		for (uint32_t i = 0; i < str0.size(); ++i)
+			CHECK_EQ(str0[i], '\0')
+
+		mc::string str1(10, 'a');
+		CHECK_EQ(str1.size(), 10)
+		str1.resize(5);
+		CHECK_EQ(str1.size(), 5)
+		for (uint32_t i = 0; i < str1.size(); ++i)
+			CHECK_EQ(str1[i], 'a')
+
+		mc::string str2(10, 'a');
+		CHECK_EQ(str2.size(), 10)
+		str2.resize(15);
+		CHECK_EQ(str2.size(), 15)
+		for (uint32_t i = 0; i < str2.size(); ++i)
+			if (i < 10)
+				CHECK_EQ(str2[i], 'a')
+			else
+				CHECK_EQ(str2[i], '\0')
+
+		mc::string str3(20, 'a');
+		CHECK_EQ(str3.size(), 20)
+		str3.resize(25);
+		CHECK_EQ(str3.size(), 25)
+		for (uint32_t i = 0; i < str3.size(); ++i)
+			if (i < 20)
+				CHECK_EQ(str3[i], 'a')
+			else
+				CHECK_EQ(str3[i], '\0')
+
+		mc::string str4(20, 'a');
+		CHECK_EQ(str4.size(), 20)
+		str4.resize(15);
+		CHECK_EQ(str4.size(), 15)
+		for (uint32_t i = 0; i < str4.size(); ++i)
+			CHECK_EQ(str4[i], 'a')
+	}
+
 	TEST(assign)
 	{
 		char const* long_str =

@@ -39,6 +39,8 @@ namespace mc
 		void reserve(uint32_t cap);
 		void fit();
 
+		void resize(uint32_t size, char c = '\0');
+
 		void assign(uint32_t count, char c);
 		// TODO assign first last
 		void assign(char const* str, uint32_t count = UINT32_MAX);
