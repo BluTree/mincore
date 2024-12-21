@@ -39,12 +39,6 @@ namespace mc
 		void reserve(uint32_t cap);
 		void fit();
 
-		string& operator=(char const* str);
-		string& operator=(string_view str);
-		string& operator=(string const& str);
-		string& operator=(string&& str);
-		string& operator=(std::initializer_list<char> ilist);
-
 		void assign(uint32_t count, char c);
 		// TODO assign first last
 		void assign(char const* str, uint32_t count = UINT32_MAX);
@@ -52,6 +46,12 @@ namespace mc
 		void assign(string const& str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		void assign(std::initializer_list<char> ilist);
 		void assign(string&& str);
+
+		string& operator=(char const* str);
+		string& operator=(string_view str);
+		string& operator=(string const& str);
+		string& operator=(string&& str);
+		string& operator=(std::initializer_list<char> ilist);
 
 		void insert(uint32_t idx, uint32_t count, char c);
 		// TODO insert first last
@@ -69,6 +69,11 @@ namespace mc
 		void append(string_view const& str, uint32_t pos = 0,
 		            uint32_t count = UINT32_MAX);
 		void append(std::initializer_list<char> ilist);
+
+		string& operator+=(char const* str);
+		string& operator+=(string_view str);
+		string& operator+=(string const& str);
+		string& operator+=(std::initializer_list<char> ilist);
 
 	private:
 		static constexpr uint32_t small_size = 16;

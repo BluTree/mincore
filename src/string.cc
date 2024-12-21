@@ -268,37 +268,6 @@ namespace mc
 		}
 	}
 
-	string& string::operator=(char const* str)
-	{
-		assign(str);
-		return *this;
-	}
-
-	string& string::operator=(string_view str)
-	{
-		assign(str);
-		return *this;
-	}
-
-	string& string::operator=(string const& str)
-	{
-		assign(str);
-		return *this;
-	}
-
-	string& string::operator=(string&& str)
-	{
-		assign(static_cast<string&&>(str));
-		return *this;
-	}
-
-	string& string::operator=(std::initializer_list<char> ilist)
-	{
-		assign(ilist);
-
-		return *this;
-	}
-
 	void string::assign(uint32_t count, char c)
 	{
 		count &= ~is_large_flag;
@@ -530,6 +499,37 @@ namespace mc
 		}
 
 		str.len_ = 0;
+	}
+
+	string& string::operator=(char const* str)
+	{
+		assign(str);
+		return *this;
+	}
+
+	string& string::operator=(string_view str)
+	{
+		assign(str);
+		return *this;
+	}
+
+	string& string::operator=(string const& str)
+	{
+		assign(str);
+		return *this;
+	}
+
+	string& string::operator=(string&& str)
+	{
+		assign(static_cast<string&&>(str));
+		return *this;
+	}
+
+	string& string::operator=(std::initializer_list<char> ilist)
+	{
+		assign(ilist);
+
+		return *this;
 	}
 
 	void string::insert(uint32_t idx, uint32_t count, char c)
@@ -1157,6 +1157,30 @@ namespace mc
 
 			len_ = new_len;
 		}
+	}
+
+	string& string::operator+=(char const* str)
+	{
+		append(str);
+		return *this;
+	}
+
+	string& string::operator+=(string_view str)
+	{
+		append(str);
+		return *this;
+	}
+
+	string& string::operator+=(string const& str)
+	{
+		append(str);
+		return *this;
+	}
+
+	string& string::operator+=(std::initializer_list<char> ilist)
+	{
+		append(ilist);
+		return *this;
 	}
 
 	bool string::is_large() const
