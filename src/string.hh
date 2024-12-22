@@ -77,6 +77,8 @@ namespace mc
 		string& operator+=(string const& str);
 		string& operator+=(std::initializer_list<char> ilist);
 
+		void erase(uint32_t idx, uint32_t count = 1);
+
 	private:
 		static constexpr uint32_t small_size = 16;
 		static constexpr uint32_t is_large_flag = 0x8000'0000;

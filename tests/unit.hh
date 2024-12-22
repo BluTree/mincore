@@ -226,13 +226,8 @@ bool print_value(char* buf, char const* val_str, T const& val)
 #define DEFAULT "\x1b[0m"
 
 template <typename T1, typename T2>
-void print_check_error(T1 const&   a,
-                       T2 const&   b,
-                       char const* a_str,
-                       char const* b_str,
-                       char const* op,
-                       int         line,
-                       char const* file)
+void print_check_error(T1 const& a, T2 const& b, char const* a_str, char const* b_str,
+                       char const* op, int line, char const* file)
 {
 	char buf1[64], buf2[64];
 	bool need_print_a = print_value(buf1, a_str, a);

@@ -660,4 +660,19 @@ GROUP(string)
 					CHECK_EQ(str3[i], 'b')
 		}
 	}
+
+	TEST(erase)
+	{
+		mc::string str0("Hello World!");
+		CHECK_EQ(str0.size(), 12)
+		str0.erase(6);
+		CHECK_EQ(str0.size(), 11)
+		CHECK_EQ(strcmp(str0.data(), "Hello orld!"), 0)
+
+		mc::string str1("This is a Hello World!");
+		CHECK_EQ(str1.size(), 22)
+		str1.erase(4, 5);
+		CHECK_EQ(str1.size(), 17)
+		CHECK_EQ(strcmp(str1.data(), "This Hello World!"), 0)
+	}
 }

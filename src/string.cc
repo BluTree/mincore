@@ -1254,6 +1254,14 @@ namespace mc
 		return *this;
 	}
 
+	void string::erase(uint32_t idx, uint32_t count)
+	{
+		memmove(data() + idx, data() + idx + count,
+		        (len_ & ~is_large_flag) - idx - count + 1);
+
+		len_ = (len_ & ~is_large_flag) - count | (len_ & is_large_flag);
+	}
+
 	bool string::is_large() const
 	{
 		return (len_ & is_large_flag) == is_large_flag;

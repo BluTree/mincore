@@ -19,10 +19,8 @@ namespace mc
 #endif
 		}
 
-		void default_free(void*                     ptr,
-		                  [[maybe_unused]] uint64_t size,
-		                  uint32_t                  alignment,
-		                  [[maybe_unused]] void*    ud)
+		void default_free(void* ptr, [[maybe_unused]] uint64_t size, uint32_t alignment,
+		                  [[maybe_unused]] void* ud)
 		{
 			if (alignment <= alignof(max_align_t))
 				::free(ptr);
