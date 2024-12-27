@@ -81,21 +81,6 @@ namespace mc
 		}
 	}
 
-	string::string(string&& str)
-	: len_ {str.len_}
-	{
-		if (is_large())
-		{
-			large_ = str.large_;
-			str.large_.str_ = nullptr;
-			str.large_.cap_ = 0;
-		}
-		else
-			small_ = str.small_;
-
-		str.len_ = 0;
-	}
-
 	string::string(string const& str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
@@ -127,6 +112,32 @@ namespace mc
 			memcpy(small_.str_, str.small_.str_, len_);
 			small_.str_[len_] = '\0';
 		}
+	}
+
+	string::string(string&& str, uint32_t pos, uint32_t count)
+	{
+		if (count == UINT32_MAX)
+			len_ = str.size() - pos;
+		else
+			len_ = count;
+
+		len_ = (len_ & ~is_large_flag) | (str.len_ & is_large_flag);
+		if (is_large())
+		{
+			large_ = str.large_;
+			memmove(large_.str_, large_.str_ + pos, count);
+			large_.str_[(len_ & ~is_large_flag)] = '\0';
+			str.large_.str_ = nullptr;
+			str.large_.cap_ = 0;
+		}
+		else
+		{
+			small_ = str.small_;
+			memmove(small_.str_, small_.str_ + pos, count);
+			small_.str_[len_] = '\0';
+		}
+
+		str.len_ = 0;
 	}
 
 	string::string(std::initializer_list<char> ilist)
@@ -1670,6 +1681,340 @@ namespace mc
 	{
 		data()[(len_ & ~is_large_flag) - 1] = '\0';
 		len_ = (len_ & ~is_large_flag) - 1 | (len_ & is_large_flag);
+	}
+
+	string string::substr(uint32_t pos, uint32_t size) const&
+	{
+		return {*this, pos, size};
+	}
+
+	string string::substr(uint32_t pos, uint32_t size) &&
+	{
+		return {static_cast<string&&>(*this), pos, size};
+	}
+
+	int32_t string::compare(string const& str) const
+	{
+		if ((len_ & ~is_large_flag) < str.size())
+			return -1;
+		else if ((len_ & ~is_large_flag) > str.size())
+			return 1;
+		else if ((len_ & ~is_large_flag) == str.size() && str.size() == 0)
+			return 0;
+		else
+			return strcmp(data(), str.data());
+	}
+
+	int32_t string::compare(string_view str) const
+	{
+		if ((len_ & ~is_large_flag) < str.size())
+			return -1;
+		else if ((len_ & ~is_large_flag) > str.size())
+			return 1;
+		else if ((len_ & ~is_large_flag) == str.size() && str.size() == 0)
+			return 0;
+		else
+			return strncmp(data(), str.data(), str.size());
+	}
+
+	int32_t string::compare(char const* str) const
+	{
+		uint32_t len = strlen(str);
+		if ((len_ & ~is_large_flag) < len)
+			return -1;
+		else if ((len_ & ~is_large_flag) > len)
+			return 1;
+		else
+			return strcmp(data(), str);
+	}
+
+	bool string::starts_with(string const& str) const
+	{
+		return strncmp(data(), str.data(), str.size()) == 0;
+	}
+
+	bool string::starts_with(string_view str) const
+	{
+		return strncmp(data(), str.data(), str.size()) == 0;
+	}
+
+	bool string::starts_with(char const* str) const
+	{
+		return strncmp(data(), str, strlen(str)) == 0;
+	}
+
+	bool string::starts_with(char c) const
+	{
+		return data()[0] == c;
+	}
+
+	bool string::ends_with(string const& str) const
+	{
+		return strncmp(data() + (len_ & ~is_large_flag) - str.size(), str.data(),
+		               str.size()) == 0;
+	}
+
+	bool string::ends_with(string_view str) const
+	{
+		return strncmp(data() + (len_ & ~is_large_flag) - str.size(), str.data(),
+		               str.size()) == 0;
+	}
+
+	bool string::ends_with(char const* str) const
+	{
+		uint32_t len = strlen(str);
+		return strncmp(data() + (len_ & ~is_large_flag) - len, str, len) == 0;
+	}
+
+	bool string::ends_with(char c) const
+	{
+		return data()[(len_ & ~is_large_flag) - 1] == c;
+	}
+
+	bool string::contains(string const& str) const
+	{
+		if (str.size() > (len_ & ~is_large_flag) || str.size() == 0)
+			return false;
+
+		for (uint32_t i {0}, j {0}; i < len_; ++i)
+		{
+			if (len_ - i < str.size() - j)
+				return false;
+
+			if (data()[i] == str.data()[j])
+			{
+				++j;
+				if (j == str.size())
+					return true;
+			}
+			else
+				j = 0;
+		}
+		return false;
+	}
+
+	bool string::contains(string_view str) const
+	{
+		if (str.size() > (len_ & ~is_large_flag) || str.size() == 0)
+			return false;
+
+		for (uint32_t i {0}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		{
+			if ((len_ & ~is_large_flag) - i < str.size() - j)
+				return false;
+
+			if (data()[i] == str.data()[j])
+			{
+				++j;
+				if (j == str.size())
+					return true;
+			}
+			else
+				j = 0;
+		}
+		return false;
+	}
+
+	bool string::contains(char const* str) const
+	{
+		uint32_t len = strlen(str);
+		if (len > (len_ & ~is_large_flag) || len == 0)
+			return false;
+
+		for (uint32_t i {0}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		{
+			if ((len_ & ~is_large_flag) - i < len - j)
+				return false;
+
+			if (data()[i] == str[j])
+			{
+				++j;
+				if (j == len)
+					return true;
+			}
+			else
+				j = 0;
+		}
+		return false;
+	}
+
+	bool string::contains(char c) const
+	{
+		for (uint32_t i {0}; i < (len_ & ~is_large_flag); ++i)
+			if (data()[i] == c)
+				return true;
+		return false;
+	}
+
+	uint32_t string::find(string const& str, uint32_t pos) const
+	{
+		if (str.size() > (len_ & ~is_large_flag) - pos || str.size() == 0)
+			return UINT32_MAX;
+
+		uint32_t match = 0;
+		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		{
+			if ((len_ & ~is_large_flag) - i < str.size() - j)
+				return UINT32_MAX;
+
+			if (data()[i] == str.data()[j])
+			{
+				if (j == 0)
+					match = i;
+				++j;
+				if (j == str.size())
+					return match;
+			}
+			else
+				j = 0;
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::find(string_view str, uint32_t pos) const
+	{
+		if (str.size() > (len_ & ~is_large_flag) - pos || str.size() == 0)
+			return UINT32_MAX;
+
+		uint32_t match = 0;
+		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		{
+			if ((len_ & ~is_large_flag) - i < str.size() - j)
+				return UINT32_MAX;
+
+			if (data()[i] == str.data()[j])
+			{
+				if (j == 0)
+					match = i;
+				++j;
+				if (j == str.size())
+					return match;
+			}
+			else
+				j = 0;
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::find(char const* str, uint32_t pos) const
+	{
+		uint32_t len = strlen(str);
+		if (len > (len_ & ~is_large_flag) - pos || len == 0)
+			return UINT32_MAX;
+
+		uint32_t match = 0;
+		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		{
+			if ((len_ & ~is_large_flag) - i < len - j)
+				return UINT32_MAX;
+
+			if (data()[i] == str[j])
+			{
+				if (j == 0)
+					match = i;
+				++j;
+				if (j == len)
+					return match;
+			}
+			else
+				j = 0;
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::find(char c, uint32_t pos) const
+	{
+		for (uint32_t i {pos}; i < (len_ & ~is_large_flag); ++i)
+			if (data()[i] == c)
+				return i;
+		return UINT32_MAX;
+	}
+
+	uint32_t string::rfind(string const& str, uint32_t pos) const
+	{
+		if (pos == UINT32_MAX)
+			pos = (len_ & ~is_large_flag) - 1;
+
+		if (str.size() > pos || str.size() == 0)
+			return UINT32_MAX;
+
+		for (uint32_t i {pos + 1}, j {str.size()}; i > 0; --i)
+		{
+			if (i < j)
+				return UINT32_MAX;
+
+			if (data()[i - 1] == str.data()[j - 1])
+			{
+				--j;
+				if (j == 0)
+					return i - 1;
+			}
+			else
+				j = str.size();
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::rfind(string_view str, uint32_t pos) const
+	{
+		if (pos == UINT32_MAX)
+			pos = (len_ & ~is_large_flag) - 1;
+
+		if (str.size() > pos || str.size() == 0)
+			return UINT32_MAX;
+
+		for (uint32_t i {pos + 1}, j {str.size()}; i > 0; --i)
+		{
+			if (i < j)
+				return UINT32_MAX;
+
+			if (data()[i - 1] == str.data()[j - 1])
+			{
+				--j;
+				if (j == 0)
+					return i - 1;
+			}
+			else
+				j = str.size();
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::rfind(char const* str, uint32_t pos) const
+	{
+		uint32_t len = strlen(str);
+		if (pos == UINT32_MAX)
+			pos = (len_ & ~is_large_flag) - 1;
+
+		if (len > pos || len == 0)
+			return UINT32_MAX;
+
+		for (uint32_t i {pos + 1}, j {len}; i > 0; --i)
+		{
+			if (i < j)
+				return UINT32_MAX;
+
+			if (data()[i - 1] == str[j - 1])
+			{
+				--j;
+				if (j == 0)
+					return i - 1;
+			}
+			else
+				j = len;
+		}
+		return UINT32_MAX;
+	}
+
+	uint32_t string::rfind(char c, uint32_t pos) const
+	{
+		if (pos == UINT32_MAX)
+			pos = (len_ & ~is_large_flag) - 1;
+
+		for (uint32_t i {pos + 1}; i > 0; --i)
+			if (data()[i - 1] == c)
+				return i - 1;
+		return UINT32_MAX;
 	}
 
 	bool string::is_large() const

@@ -16,8 +16,8 @@ namespace mc
 		string(char const* str, uint32_t count = UINT32_MAX);
 		string(string_view str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		string(string const& str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
+		string(string&& str, uint32_t pos = 0, uint32_t count = UINT32_MAX);
 		string(std::initializer_list<char> ilist);
-		string(string&& str);
 		~string();
 
 		bool        empty() const;
@@ -91,6 +91,38 @@ namespace mc
 
 		void push_back(char c);
 		void pop_back();
+
+		string substr(uint32_t pos, uint32_t size = UINT32_MAX) const&;
+		string substr(uint32_t pos, uint32_t size = UINT32_MAX) &&;
+
+		int32_t compare(string const& str) const;
+		int32_t compare(string_view str) const;
+		int32_t compare(char const* str) const;
+
+		bool starts_with(string const& str) const;
+		bool starts_with(string_view str) const;
+		bool starts_with(char const* str) const;
+		bool starts_with(char c) const;
+
+		bool ends_with(string const& str) const;
+		bool ends_with(string_view str) const;
+		bool ends_with(char const* str) const;
+		bool ends_with(char c) const;
+
+		bool contains(string const& str) const;
+		bool contains(string_view str) const;
+		bool contains(char const* str) const;
+		bool contains(char c) const;
+
+		uint32_t find(string const& str, uint32_t pos = 0) const;
+		uint32_t find(string_view str, uint32_t pos = 0) const;
+		uint32_t find(char const* str, uint32_t pos = 0) const;
+		uint32_t find(char c, uint32_t pos = 0) const;
+
+		uint32_t rfind(string const& str, uint32_t pos = UINT32_MAX) const;
+		uint32_t rfind(string_view str, uint32_t pos = UINT32_MAX) const;
+		uint32_t rfind(char const* str, uint32_t pos = UINT32_MAX) const;
+		uint32_t rfind(char c, uint32_t pos = UINT32_MAX) const;
 
 	private:
 		static constexpr uint32_t small_size = 16;

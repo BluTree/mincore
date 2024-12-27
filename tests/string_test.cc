@@ -927,4 +927,332 @@ GROUP(string)
 		str1.pop_back();
 		CHECK_EQ(str1.size(), 15)
 	}
+
+	TEST(compare)
+	{
+		mc::string str0;
+
+		int32_t res0 = str0.compare(str0);
+		CHECK_EQ(res0, 0);
+
+		res0 = str0.compare(mc::string_view());
+		CHECK_EQ(res0, 0);
+
+		int32_t res1 = str0.compare("Hello World!");
+		CHECK_LT(res1, 0);
+
+		res1 = str0.compare(mc::string("Hello World!"));
+		CHECK_LT(res1, 0);
+
+		res1 = str0.compare(mc::string_view("Hello World!"));
+		CHECK_LT(res1, 0);
+
+		mc::string str1("Hello World!");
+
+		int32_t res2 = str1.compare(str0);
+		CHECK_GT(res2, 0);
+
+		res2 = str1.compare(mc::string_view());
+		CHECK_GT(res2, 0);
+
+		int32_t res3 = str1.compare("Hello World!");
+		CHECK_EQ(res3, 0);
+
+		res3 = str1.compare(mc::string("Hello World!"));
+		CHECK_EQ(res3, 0);
+
+		res3 = str1.compare(mc::string_view("Hello World!"));
+		CHECK_EQ(res3, 0);
+
+		int32_t res4 = str1.compare("Hello World!!");
+		CHECK_LT(res4, 0);
+
+		res4 = str1.compare(mc::string("Hello World!!"));
+		CHECK_LT(res4, 0);
+
+		res4 = str1.compare(mc::string_view("Hello World!!"));
+		CHECK_LT(res4, 0);
+	}
+
+	TEST(starts_with)
+	{
+		mc::string str0("Hello World!");
+
+		bool res0 = str0.starts_with("Hello");
+		CHECK_EQ(res0, true);
+
+		res0 = str0.starts_with(mc::string("Hello"));
+		CHECK_EQ(res0, true);
+
+		res0 = str0.starts_with(mc::string_view("Hello"));
+		CHECK_EQ(res0, true);
+
+		bool res1 = str0.starts_with("World!");
+		CHECK_EQ(res1, false);
+
+		res1 = str0.starts_with(mc::string("World!"));
+		CHECK_EQ(res1, false);
+
+		res1 = str0.starts_with(mc::string_view("World!"));
+		CHECK_EQ(res1, false);
+
+		bool res2 = str0.starts_with('H');
+		CHECK_EQ(res2, true);
+
+		bool res3 = str0.starts_with('W');
+		CHECK_EQ(res3, false);
+	}
+
+	TEST(ends_with)
+	{
+		mc::string str0("Hello World!");
+
+		bool res0 = str0.ends_with("Hello");
+		CHECK_EQ(res0, false);
+
+		res0 = str0.ends_with(mc::string("Hello"));
+		CHECK_EQ(res0, false);
+
+		res0 = str0.ends_with(mc::string_view("Hello"));
+		CHECK_EQ(res0, false);
+
+		bool res1 = str0.ends_with("World!");
+		CHECK_EQ(res1, true);
+
+		res1 = str0.ends_with(mc::string("World!"));
+		CHECK_EQ(res1, true);
+
+		res1 = str0.ends_with(mc::string_view("World!"));
+		CHECK_EQ(res1, true);
+
+		bool res2 = str0.ends_with('o');
+		CHECK_EQ(res2, false);
+
+		bool res3 = str0.ends_with('!');
+		CHECK_EQ(res3, true);
+	}
+
+	TEST(contains)
+	{
+		mc::string str0("Hello World!");
+
+		bool res0 = str0.contains("Hello");
+		CHECK_EQ(res0, true);
+
+		res0 = str0.contains(mc::string("Hello"));
+		CHECK_EQ(res0, true);
+
+		res0 = str0.contains(mc::string_view("Hello"));
+		CHECK_EQ(res0, true);
+
+		bool res1 = str0.contains("World!");
+		CHECK_EQ(res1, true);
+
+		res1 = str0.contains(mc::string("World!"));
+		CHECK_EQ(res1, true);
+
+		res1 = str0.contains(mc::string_view("World!"));
+		CHECK_EQ(res1, true);
+
+		bool res2 = str0.contains("World !");
+		CHECK_EQ(res2, false);
+
+		res2 = str0.contains(mc::string("World !"));
+		CHECK_EQ(res2, false);
+
+		res2 = str0.contains(mc::string_view("World !"));
+		CHECK_EQ(res2, false);
+
+		bool res3 = str0.contains('H');
+		CHECK_EQ(res3, true);
+
+		bool res4 = str0.contains('W');
+		CHECK_EQ(res4, true);
+
+		bool res5 = str0.contains('Z');
+		CHECK_EQ(res5, false);
+	}
+
+	TEST(find)
+	{
+		mc::string str0("Hello World!");
+
+		uint32_t res0 = str0.find("Hello");
+		CHECK_EQ(res0, 0);
+
+		res0 = str0.find(mc::string("Hello"));
+		CHECK_EQ(res0, 0);
+
+		res0 = str0.find(mc::string_view("Hello"));
+		CHECK_EQ(res0, 0);
+
+		uint32_t res1 = str0.find("World!");
+		CHECK_EQ(res1, 6);
+
+		res1 = str0.find(mc::string("World!"));
+		CHECK_EQ(res1, 6);
+
+		res1 = str0.find(mc::string_view("World!"));
+		CHECK_EQ(res1, 6);
+
+		uint32_t res2 = str0.find("World !");
+		CHECK_EQ(res2, UINT32_MAX);
+
+		res2 = str0.find(mc::string("World !"));
+		CHECK_EQ(res2, UINT32_MAX);
+
+		res2 = str0.find(mc::string_view("World !"));
+		CHECK_EQ(res2, UINT32_MAX);
+
+		uint32_t res3 = str0.find('H');
+		CHECK_EQ(res3, 0);
+
+		uint32_t res4 = str0.find('W');
+		CHECK_EQ(res4, 6);
+
+		uint32_t res5 = str0.find('Z');
+		CHECK_EQ(res5, UINT32_MAX);
+
+		mc::string str1("This is a very long string containing 'Hello World!', so "
+		                "you should use 'pos' argument to optimize the find call");
+
+		uint32_t res6 = str1.find("Hello", 25);
+		CHECK_EQ(res6, 39);
+
+		res6 = str1.find(mc::string("Hello"), 25);
+		CHECK_EQ(res6, 39);
+		res6 = str1.find(mc::string_view("Hello"), 25);
+		CHECK_EQ(res6, 39);
+
+		uint32_t res7 = str1.find("Hello", 45);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		res7 = str1.find(mc::string("Hello"), 45);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		res7 = str1.find(mc::string_view("Hello"), 45);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		uint32_t res8 = str1.find("World!", 35);
+		CHECK_EQ(res8, 45);
+
+		res8 = str1.find(mc::string("World!"), 35);
+		CHECK_EQ(res8, 45);
+
+		res8 = str1.find(mc::string_view("World!"), 35);
+		CHECK_EQ(res8, 45);
+
+		uint32_t res9 = str1.find("World !", 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		res9 = str1.find(mc::string("World !"), 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		res9 = str1.find(mc::string_view("World !"), 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		uint32_t res10 = str1.find('H', 25);
+		CHECK_EQ(res10, 39);
+
+		uint32_t res11 = str1.find('H', 45);
+		CHECK_EQ(res11, UINT32_MAX);
+
+		uint32_t res12 = str1.find('W', 35);
+		CHECK_EQ(res12, 45);
+
+		uint32_t res13 = str1.find('Z');
+		CHECK_EQ(res13, UINT32_MAX);
+	}
+
+	TEST(rfind)
+	{
+		mc::string str0("Hello World!");
+
+		uint32_t res0 = str0.rfind("Hello");
+		CHECK_EQ(res0, 0);
+
+		res0 = str0.rfind(mc::string("Hello"));
+		CHECK_EQ(res0, 0);
+
+		res0 = str0.rfind(mc::string_view("Hello"));
+		CHECK_EQ(res0, 0);
+
+		uint32_t res1 = str0.rfind("World!");
+		CHECK_EQ(res1, 6);
+
+		res1 = str0.rfind(mc::string("World!"));
+		CHECK_EQ(res1, 6);
+
+		res1 = str0.rfind(mc::string_view("World!"));
+		CHECK_EQ(res1, 6);
+
+		uint32_t res2 = str0.rfind("World !");
+		CHECK_EQ(res2, UINT32_MAX);
+
+		res2 = str0.rfind(mc::string("World !"));
+		CHECK_EQ(res2, UINT32_MAX);
+
+		res2 = str0.rfind(mc::string_view("World !"));
+		CHECK_EQ(res2, UINT32_MAX);
+
+		uint32_t res3 = str0.rfind('H');
+		CHECK_EQ(res3, 0);
+
+		uint32_t res4 = str0.rfind('W');
+		CHECK_EQ(res4, 6);
+
+		uint32_t res5 = str0.rfind('Z');
+		CHECK_EQ(res5, UINT32_MAX);
+
+		mc::string str1("This is a very long string containing 'Hello World!', so "
+		                "you should use 'pos' argument to optimize the rfind call");
+
+		uint32_t res6 = str1.rfind("Hello", 45);
+		CHECK_EQ(res6, 39);
+
+		res6 = str1.rfind(mc::string("Hello"), 45);
+		CHECK_EQ(res6, 39);
+
+		res6 = str1.rfind(mc::string_view("Hello"), 45);
+		CHECK_EQ(res6, 39);
+
+		uint32_t res7 = str1.rfind("Hello", 25);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		res7 = str1.rfind(mc::string("Hello"), 25);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		res7 = str1.rfind(mc::string_view("Hello"), 25);
+		CHECK_EQ(res7, UINT32_MAX);
+
+		uint32_t res8 = str1.rfind("World!", 55);
+		CHECK_EQ(res8, 45);
+
+		res8 = str1.rfind(mc::string("World!"), 55);
+		CHECK_EQ(res8, 45);
+
+		res8 = str1.rfind(mc::string_view("World!"), 55);
+		CHECK_EQ(res8, 45);
+
+		uint32_t res9 = str1.rfind("World !", 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		res9 = str1.rfind(mc::string("World !"), 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		res9 = str1.rfind(mc::string_view("World !"), 28);
+		CHECK_EQ(res9, UINT32_MAX);
+
+		uint32_t res10 = str1.rfind('H', 45);
+		CHECK_EQ(res10, 39);
+
+		uint32_t res11 = str1.rfind('H', 25);
+		CHECK_EQ(res11, UINT32_MAX);
+
+		uint32_t res12 = str1.rfind('W', 55);
+		CHECK_EQ(res12, 45);
+
+		uint32_t res13 = str1.rfind('Z');
+		CHECK_EQ(res13, UINT32_MAX);
+	}
 }
