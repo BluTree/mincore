@@ -675,4 +675,38 @@ GROUP(string)
 		CHECK_EQ(str1.size(), 17)
 		CHECK_EQ(strcmp(str1.data(), "This Hello World!"), 0)
 	}
+
+	TEST(push_back)
+	{
+		mc::string str0;
+		CHECK_EQ(str0.size(), 0)
+		str0.push_back('H');
+		CHECK_EQ(str0.size(), 1)
+		CHECK_EQ(str0[0], 'H')
+
+		mc::string str1(15, 'a');
+		CHECK_EQ(str1.size(), 15)
+		str1.push_back('H');
+		CHECK_EQ(str1.size(), 16)
+		CHECK_EQ(str1[15], 'H')
+	}
+
+	TEST(pop_back)
+	{
+		mc::string str0;
+		CHECK_EQ(str0.size(), 0)
+		str0.push_back('H');
+		CHECK_EQ(str0.size(), 1)
+		CHECK_EQ(str0[0], 'H')
+		str0.pop_back();
+		CHECK_EQ(str0.size(), 0)
+
+		mc::string str1(15, 'a');
+		CHECK_EQ(str1.size(), 15)
+		str1.push_back('H');
+		CHECK_EQ(str1.size(), 16)
+		CHECK_EQ(str1[15], 'H')
+		str1.pop_back();
+		CHECK_EQ(str1.size(), 15)
+	}
 }

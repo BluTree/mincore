@@ -1262,6 +1262,65 @@ namespace mc
 		len_ = (len_ & ~is_large_flag) - count | (len_ & is_large_flag);
 	}
 
+	void string::push_back(char c)
+	{
+		uint32_t new_len = (len_ & ~is_large_flag) + 1;
+		if (is_large())
+		{
+			if (new_len > large_.cap_)
+			{
+				uint32_t new_cap = large_.cap_;
+				while (new_cap < new_len)
+					new_cap *= 2;
+
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
+				new_str[(len_ & ~is_large_flag)] = c;
+				new_str[new_len] = '\0';
+
+				free(large_.str_, large_.cap_ + 1, alignof(char));
+
+				large_.str_ = new_str;
+				large_.cap_ = new_cap;
+			}
+			else
+			{
+				memset(large_.str_ + (len_ & ~is_large_flag), c, 1);
+				large_.str_[new_len] = '\0';
+			}
+
+			len_ = new_len | is_large_flag;
+		}
+		else if (new_len >= small_size)
+		{
+			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
+			new_str[(len_ & ~is_large_flag)] = c;
+			new_str[new_len] = '\0';
+
+			large_.str_ = new_str;
+			large_.cap_ = new_len;
+
+			len_ = new_len | is_large_flag;
+		}
+		else
+		{
+			small_.str_[(len_ & ~is_large_flag)] = c;
+			small_.str_[new_len] = '\0';
+
+			len_ = new_len;
+		}
+	}
+
+	void string::pop_back()
+	{
+		data()[(len_ & ~is_large_flag) - 1] = '\0';
+		len_ = (len_ & ~is_large_flag) - 1 | (len_ & is_large_flag);
+	}
+
 	bool string::is_large() const
 	{
 		return (len_ & is_large_flag) == is_large_flag;
