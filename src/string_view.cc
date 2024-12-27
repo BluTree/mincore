@@ -61,12 +61,14 @@ namespace mc
 
 	int32_t string_view::compare(string_view str) const
 	{
-		if (len_ < str.len_)
-			return -1;
-		else if (len_ > str.len_)
+		if (len_ && !str.len_)
 			return 1;
+		else if (!len_ && str.len_)
+			return -1;
+		else if (!len_ && !str.len_)
+			return 0;
 		else
-			return strncmp(str_, str.str_, len_);
+			return strncmp(str_, str.str_, str.len_);
 	}
 
 	bool string_view::starts_with(string_view str) const

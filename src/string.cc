@@ -1695,11 +1695,11 @@ namespace mc
 
 	int32_t string::compare(string const& str) const
 	{
-		if ((len_ & ~is_large_flag) < str.size())
-			return -1;
-		else if ((len_ & ~is_large_flag) > str.size())
+		if ((len_ & ~is_large_flag) && !str.size())
 			return 1;
-		else if ((len_ & ~is_large_flag) == str.size() && str.size() == 0)
+		else if (!(len_ & ~is_large_flag) && str.size())
+			return -1;
+		else if (!(len_ & ~is_large_flag) && !str.size())
 			return 0;
 		else
 			return strcmp(data(), str.data());
@@ -1707,11 +1707,11 @@ namespace mc
 
 	int32_t string::compare(string_view str) const
 	{
-		if ((len_ & ~is_large_flag) < str.size())
-			return -1;
-		else if ((len_ & ~is_large_flag) > str.size())
+		if ((len_ & ~is_large_flag) && !str.size())
 			return 1;
-		else if ((len_ & ~is_large_flag) == str.size() && str.size() == 0)
+		else if (!(len_ & ~is_large_flag) && str.size())
+			return -1;
+		else if (!(len_ & ~is_large_flag) && !str.size())
 			return 0;
 		else
 			return strncmp(data(), str.data(), str.size());
@@ -1719,13 +1719,7 @@ namespace mc
 
 	int32_t string::compare(char const* str) const
 	{
-		uint32_t len = strlen(str);
-		if ((len_ & ~is_large_flag) < len)
-			return -1;
-		else if ((len_ & ~is_large_flag) > len)
-			return 1;
-		else
-			return strcmp(data(), str);
+		return strcmp(data(), str);
 	}
 
 	bool string::starts_with(string const& str) const
