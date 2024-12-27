@@ -77,6 +77,16 @@ namespace mc
 		string& operator+=(string const& str);
 		string& operator+=(std::initializer_list<char> ilist);
 
+		void replace(uint32_t idx, uint32_t count, uint32_t count2, char c);
+		// TODO replace first last
+		void replace(uint32_t idx, uint32_t count, char const* str,
+		             uint32_t count2 = UINT32_MAX);
+		void replace(uint32_t idx, uint32_t count, string const& str, uint32_t pos = 0,
+		             uint32_t count2 = UINT32_MAX);
+		void replace(uint32_t idx, uint32_t count, string_view const& str,
+		             uint32_t pos = 0, uint32_t count2 = UINT32_MAX);
+		void replace(uint32_t idx, uint32_t count, std::initializer_list<char> ilist);
+
 		void erase(uint32_t idx, uint32_t count = 1);
 
 		void push_back(char c);

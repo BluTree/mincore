@@ -661,6 +661,224 @@ GROUP(string)
 		}
 	}
 
+	TEST(replace)
+	{
+		{
+			mc::string str0(10, 'a');
+			CHECK_EQ(str0.size(), 10)
+			str0.replace(5, 5, 5, 'b');
+			CHECK_EQ(str0.size(), 10)
+			for (uint32_t i = 0; i < str0.size(); ++i)
+				if (i < 5)
+					CHECK_EQ(str0[i], 'a')
+				else
+					CHECK_EQ(str0[i], 'b')
+
+			mc::string str1(15, 'a');
+			CHECK_EQ(str1.size(), 15)
+			str1.replace(5, 5, 10, 'b');
+			CHECK_EQ(str1.size(), 20)
+			for (uint32_t i = 0; i < str1.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str1[i], 'a')
+				else
+					CHECK_EQ(str1[i], 'b')
+
+			mc::string str2(20, 'a');
+			CHECK_EQ(str2.size(), 20)
+			str2.reserve(30);
+			str2.replace(5, 5, 10, 'b');
+			CHECK_EQ(str2.size(), 25)
+			for (uint32_t i = 0; i < str2.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str2[i], 'a')
+				else
+					CHECK_EQ(str2[i], 'b')
+
+			mc::string str3(20, 'a');
+			CHECK_EQ(str3.size(), 20)
+			str3.replace(5, 5, 10, 'b');
+			CHECK_EQ(str3.size(), 25)
+			for (uint32_t i = 0; i < str3.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str3[i], 'a')
+				else
+					CHECK_EQ(str3[i], 'b')
+		}
+
+		{
+			mc::string str0(10, 'a');
+			CHECK_EQ(str0.size(), 10)
+			str0.replace(5, 5, "Hello World!", 10);
+			CHECK_EQ(str0.size(), 15)
+			for (uint32_t i = 0; i < str0.size(); ++i)
+				if (i < 5)
+					CHECK_EQ(str0[i], 'a')
+
+			CHECK_EQ(strncmp(str0.data() + 5, "Hello Worl", 10), 0)
+
+			mc::string str1(15, 'a');
+			CHECK_EQ(str1.size(), 15)
+			str1.replace(5, 5, "Hello World!");
+			CHECK_EQ(str1.size(), 22)
+			for (uint32_t i = 0; i < str1.size(); ++i)
+				if (i < 5 || i >= 17)
+					CHECK_EQ(str1[i], 'a')
+
+			CHECK_EQ(strncmp(str1.data() + 5, "Hello World!", 12), 0)
+
+			mc::string str2(20, 'a');
+			CHECK_EQ(str2.size(), 20)
+			str2.reserve(27);
+			str2.replace(5, 5, "Hello World!");
+			CHECK_EQ(str2.size(), 27)
+			for (uint32_t i = 0; i < str2.size(); ++i)
+				if (i < 5 || i >= 17)
+					CHECK_EQ(str2[i], 'a')
+
+			CHECK_EQ(strncmp(str2.data() + 5, "Hello World!", 12), 0)
+
+			mc::string str3(20, 'a');
+			CHECK_EQ(str3.size(), 20)
+			str3.replace(5, 5, "Hello World!");
+			CHECK_EQ(str3.size(), 27)
+			for (uint32_t i = 0; i < str3.size(); ++i)
+				if (i < 5 || i >= 17)
+					CHECK_EQ(str3[i], 'a')
+
+			CHECK_EQ(strncmp(str3.data() + 5, "Hello World!", 12), 0)
+		}
+
+		{
+			mc::string str0(9, 'a');
+			CHECK_EQ(str0.size(), 9)
+			str0.replace(5, 5, mc::string("Hello World!"), 6);
+			CHECK_EQ(str0.size(), 10)
+			for (uint32_t i = 0; i < str0.size(); ++i)
+				if (i < 5)
+					CHECK_EQ(str0[i], 'a')
+
+			CHECK_EQ(strncmp(str0.data() + 5, "World!", 6), 0)
+
+			mc::string str1(15, 'a');
+			CHECK_EQ(str1.size(), 15)
+			str1.replace(5, 5, mc::string("Hello World!"), 6);
+			CHECK_EQ(str1.size(), 16)
+			for (uint32_t i = 0; i < str1.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str1[i], 'a')
+
+			CHECK_EQ(strncmp(str1.data() + 5, "World!", 6), 0)
+
+			mc::string str2(20, 'a');
+			CHECK_EQ(str2.size(), 20)
+			str2.reserve(27);
+			str2.replace(5, 5, mc::string("Hello World!"), 6);
+			CHECK_EQ(str2.size(), 21)
+			for (uint32_t i = 0; i < str2.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str2[i], 'a')
+
+			CHECK_EQ(strncmp(str2.data() + 5, "World!", 6), 0)
+
+			mc::string str3(20, 'a');
+			CHECK_EQ(str3.size(), 20)
+			str3.replace(5, 5, mc::string("Hello World!"), 6);
+			CHECK_EQ(str3.size(), 21)
+			for (uint32_t i = 0; i < str3.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str3[i], 'a')
+
+			CHECK_EQ(strncmp(str3.data() + 5, "World!", 6), 0)
+		}
+
+		{
+			mc::string str0(9, 'a');
+			CHECK_EQ(str0.size(), 9)
+			str0.replace(5, 5, mc::string_view("Hello World!"), 6);
+			CHECK_EQ(str0.size(), 10)
+			for (uint32_t i = 0; i < str0.size(); ++i)
+				if (i < 5)
+					CHECK_EQ(str0[i], 'a')
+
+			CHECK_EQ(strncmp(str0.data() + 5, "World!", 6), 0)
+
+			mc::string str1(15, 'a');
+			CHECK_EQ(str1.size(), 15)
+			str1.replace(5, 5, mc::string_view("Hello World!"), 6);
+			CHECK_EQ(str1.size(), 16)
+			for (uint32_t i = 0; i < str1.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str1[i], 'a')
+
+			CHECK_EQ(strncmp(str1.data() + 5, "World!", 6), 0)
+
+			mc::string str2(20, 'a');
+			CHECK_EQ(str2.size(), 20)
+			str2.reserve(27);
+			str2.replace(5, 5, mc::string_view("Hello World!"), 6);
+			CHECK_EQ(str2.size(), 21)
+			for (uint32_t i = 0; i < str2.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str2[i], 'a')
+
+			CHECK_EQ(strncmp(str2.data() + 5, "World!", 6), 0)
+
+			mc::string str3(20, 'a');
+			CHECK_EQ(str3.size(), 20)
+			str3.replace(5, 5, mc::string_view("Hello World!"), 6);
+			CHECK_EQ(str3.size(), 21)
+			for (uint32_t i = 0; i < str3.size(); ++i)
+				if (i < 5 || i >= 11)
+					CHECK_EQ(str3[i], 'a')
+
+			CHECK_EQ(strncmp(str3.data() + 5, "World!", 6), 0)
+		}
+
+		{
+			mc::string str0(10, 'a');
+			CHECK_EQ(str0.size(), 10)
+			str0.replace(5, 5, {'b', 'b', 'b', 'b', 'b'});
+			CHECK_EQ(str0.size(), 10)
+			for (uint32_t i = 0; i < str0.size(); ++i)
+				if (i < 5)
+					CHECK_EQ(str0[i], 'a')
+				else
+					CHECK_EQ(str0[i], 'b')
+
+			mc::string str1(15, 'a');
+			CHECK_EQ(str1.size(), 15)
+			str1.replace(5, 5, {'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'});
+			CHECK_EQ(str1.size(), 20)
+			for (uint32_t i = 0; i < str1.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str1[i], 'a')
+				else
+					CHECK_EQ(str1[i], 'b')
+
+			mc::string str2(20, 'a');
+			CHECK_EQ(str2.size(), 20)
+			str2.reserve(25);
+			str2.replace(5, 5, {'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'});
+			CHECK_EQ(str2.size(), 25)
+			for (uint32_t i = 0; i < str2.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str2[i], 'a')
+				else
+					CHECK_EQ(str2[i], 'b')
+
+			mc::string str3(20, 'a');
+			CHECK_EQ(str3.size(), 20)
+			str3.replace(5, 5, {'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'});
+			CHECK_EQ(str3.size(), 25)
+			for (uint32_t i = 0; i < str3.size(); ++i)
+				if (i < 5 || i >= 15)
+					CHECK_EQ(str3[i], 'a')
+				else
+					CHECK_EQ(str3[i], 'b')
+		}
+	}
+
 	TEST(erase)
 	{
 		mc::string str0("Hello World!");

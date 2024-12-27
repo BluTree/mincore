@@ -1254,6 +1254,357 @@ namespace mc
 		return *this;
 	}
 
+	void string::replace(uint32_t idx, uint32_t count, uint32_t count2, char c)
+	{
+		if (count == 0)
+		{
+			insert(idx, count2, c);
+		}
+		else
+		{
+			count &= ~is_large_flag;
+			count2 &= ~is_large_flag;
+
+			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
+			if (is_large())
+			{
+				if (new_len > large_.cap_)
+				{
+					uint32_t new_cap = large_.cap_;
+					while (new_cap < new_len)
+						new_cap *= 2;
+
+					char* new_str =
+						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+					memcpy(new_str, large_.str_, idx);
+					memmove(new_str + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memset(new_str + idx, c, count2);
+
+					free(large_.str_, large_.cap_ + 1, alignof(char));
+
+					large_.str_ = new_str;
+					large_.cap_ = new_cap;
+				}
+				else
+				{
+					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memset(large_.str_ + idx, c, count2);
+				}
+
+				len_ = new_len | is_large_flag;
+			}
+			else if (new_len >= small_size)
+			{
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+				memcpy(new_str, small_.str_, idx);
+				memmove(new_str + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memset(new_str + idx, c, count2);
+
+				large_.str_ = new_str;
+				large_.cap_ = new_len;
+
+				len_ = new_len | is_large_flag;
+			}
+			else
+			{
+				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memset(small_.str_ + idx, c, count2);
+
+				len_ = new_len;
+			}
+		}
+	}
+
+	void string::replace(uint32_t idx, uint32_t count, char const* str, uint32_t count2)
+	{
+		if (idx == len_)
+		{
+			append(str, count2);
+		}
+		else
+		{
+			if (count2 == UINT32_MAX)
+				count2 = strlen(str);
+
+			count &= ~is_large_flag;
+			count2 &= ~is_large_flag;
+
+			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
+			if (is_large())
+			{
+				if (new_len > large_.cap_)
+				{
+					uint32_t new_cap = large_.cap_;
+					while (new_cap < new_len)
+						new_cap *= 2;
+
+					char* new_str =
+						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+					memcpy(new_str, large_.str_, idx);
+					memmove(new_str + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(new_str + idx, str, count2);
+
+					free(large_.str_, large_.cap_ + 1, alignof(char));
+
+					large_.str_ = new_str;
+					large_.cap_ = new_cap;
+				}
+				else
+				{
+					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(large_.str_ + idx, str, count2);
+				}
+
+				len_ = new_len | is_large_flag;
+			}
+			else if (new_len >= small_size)
+			{
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+				memcpy(new_str, small_.str_, idx);
+				memmove(new_str + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(new_str + idx, str, count2);
+
+				large_.str_ = new_str;
+				large_.cap_ = new_len;
+
+				len_ = new_len | is_large_flag;
+			}
+			else
+			{
+				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(small_.str_ + idx, str, count2);
+
+				len_ = new_len;
+			}
+		}
+	}
+
+	void string::replace(uint32_t idx, uint32_t count, string const& str, uint32_t pos,
+	                     uint32_t count2)
+	{
+		if (idx == len_)
+		{
+			append(str, pos, count2);
+		}
+		else
+		{
+			if (count2 == UINT32_MAX)
+				count2 = str.size() - pos;
+
+			count &= ~is_large_flag;
+			count2 &= ~is_large_flag;
+
+			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
+			if (is_large())
+			{
+				if (new_len > large_.cap_)
+				{
+					uint32_t new_cap = large_.cap_;
+					while (new_cap < new_len)
+						new_cap *= 2;
+
+					char* new_str =
+						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+					memcpy(new_str, large_.str_, idx);
+					memmove(new_str + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(new_str + idx, str.data() + pos, count2);
+
+					free(large_.str_, large_.cap_ + 1, alignof(char));
+
+					large_.str_ = new_str;
+					large_.cap_ = new_cap;
+				}
+				else
+				{
+					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(large_.str_ + idx, str.data() + pos, count2);
+				}
+
+				len_ = new_len | is_large_flag;
+			}
+			else if (new_len >= small_size)
+			{
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+				memcpy(new_str, small_.str_, idx);
+				memmove(new_str + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(new_str + idx, str.data() + pos, count2);
+
+				large_.str_ = new_str;
+				large_.cap_ = new_len;
+
+				len_ = new_len | is_large_flag;
+			}
+			else
+			{
+				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(small_.str_ + idx, str.data() + pos, count2);
+
+				len_ = new_len;
+			}
+		}
+	}
+
+	void string::replace(uint32_t idx, uint32_t count, string_view const& str,
+	                     uint32_t pos, uint32_t count2)
+	{
+		if (idx == len_)
+		{
+			append(str, pos, count2);
+		}
+		else
+		{
+			if (count2 == UINT32_MAX)
+				count2 = str.size() - pos;
+
+			count &= ~is_large_flag;
+			count2 &= ~is_large_flag;
+
+			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
+			if (is_large())
+			{
+				if (new_len > large_.cap_)
+				{
+					uint32_t new_cap = large_.cap_;
+					while (new_cap < new_len)
+						new_cap *= 2;
+
+					char* new_str =
+						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+					memcpy(new_str, large_.str_, idx);
+					memmove(new_str + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(new_str + idx, str.data() + pos, count2);
+
+					free(large_.str_, large_.cap_ + 1, alignof(char));
+
+					large_.str_ = new_str;
+					large_.cap_ = new_cap;
+				}
+				else
+				{
+					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(large_.str_ + idx, str.data() + pos, count2);
+				}
+
+				len_ = new_len | is_large_flag;
+			}
+			else if (new_len >= small_size)
+			{
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+				memcpy(new_str, small_.str_, idx);
+				memmove(new_str + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(new_str + idx, str.data() + pos, count2);
+
+				large_.str_ = new_str;
+				large_.cap_ = new_len;
+
+				len_ = new_len | is_large_flag;
+			}
+			else
+			{
+				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(small_.str_ + idx, str.data() + pos, count2);
+
+				len_ = new_len;
+			}
+		}
+	}
+
+	void string::replace(uint32_t idx, uint32_t count, std::initializer_list<char> ilist)
+	{
+		if (idx == len_)
+		{
+			append(ilist);
+		}
+		else
+		{
+			count &= ~is_large_flag;
+			uint32_t count2 = ilist.size() & ~is_large_flag;
+
+			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
+			if (is_large())
+			{
+				if (new_len > large_.cap_)
+				{
+					uint32_t new_cap = large_.cap_;
+					while (new_cap < new_len)
+						new_cap *= 2;
+
+					char* new_str =
+						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
+
+					memcpy(new_str, large_.str_, idx);
+					memmove(new_str + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(new_str + idx, ilist.begin(), count2);
+
+					free(large_.str_, large_.cap_ + 1, alignof(char));
+
+					large_.str_ = new_str;
+					large_.cap_ = new_cap;
+				}
+				else
+				{
+					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
+					        (len_ & ~is_large_flag) - idx - count + 1);
+					memcpy(large_.str_ + idx, ilist.begin(), count2);
+				}
+
+				len_ = new_len | is_large_flag;
+			}
+			else if (new_len >= small_size)
+			{
+				char* new_str =
+					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
+
+				memcpy(new_str, small_.str_, idx);
+				memmove(new_str + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(new_str + idx, ilist.begin(), count2);
+
+				large_.str_ = new_str;
+				large_.cap_ = new_len;
+
+				len_ = new_len | is_large_flag;
+			}
+			else
+			{
+				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
+				        (len_ & ~is_large_flag) - idx - count + 1);
+				memcpy(small_.str_ + idx, ilist.begin(), count2);
+
+				len_ = new_len;
+			}
+		}
+	}
+
 	void string::erase(uint32_t idx, uint32_t count)
 	{
 		memmove(data() + idx, data() + idx + count,

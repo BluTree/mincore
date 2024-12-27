@@ -54,12 +54,12 @@ namespace mc
 		size_ -= size;
 	}
 
-	string_view string_view::substr(uint32_t pos, uint32_t size)
+	string_view string_view::substr(uint32_t pos, uint32_t size) const
 	{
 		return {str_ + pos, size};
 	}
 
-	int32_t string_view::compare(string_view const& other)
+	int32_t string_view::compare(string_view const& other) const
 	{
 		if (size_ < other.size_)
 			return -1;
@@ -69,27 +69,27 @@ namespace mc
 			return strncmp(str_, other.str_, size_);
 	}
 
-	bool string_view::starts_with(string_view const& str)
+	bool string_view::starts_with(string_view const& str) const
 	{
 		return strncmp(str_, str.str_, str.size_) == 0;
 	}
 
-	bool string_view::starts_with(char c)
+	bool string_view::starts_with(char c) const
 	{
 		return str_[0] == c;
 	}
 
-	bool string_view::ends_with(string_view const& str)
+	bool string_view::ends_with(string_view const& str) const
 	{
 		return strncmp(str_ + size_ - str.size_, str.str_, str.size_) == 0;
 	}
 
-	bool string_view::ends_with(char c)
+	bool string_view::ends_with(char c) const
 	{
 		return str_[size_ - 1] == c;
 	}
 
-	bool string_view::contains(string_view const& str)
+	bool string_view::contains(string_view const& str) const
 	{
 		if (str.size_ > size_ || str.size_ == 0)
 			return false;
@@ -111,7 +111,7 @@ namespace mc
 		return false;
 	}
 
-	bool string_view::contains(char c)
+	bool string_view::contains(char c) const
 	{
 		for (uint32_t i {0}; i < size_; ++i)
 			if (str_[i] == c)
@@ -119,7 +119,7 @@ namespace mc
 		return false;
 	}
 
-	uint32_t string_view::find(string_view const& str, uint32_t pos)
+	uint32_t string_view::find(string_view const& str, uint32_t pos) const
 	{
 		if (str.size_ > size_ - pos || str.size_ == 0)
 			return UINT32_MAX;
@@ -144,7 +144,7 @@ namespace mc
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::find(char c, uint32_t pos)
+	uint32_t string_view::find(char c, uint32_t pos) const
 	{
 		for (uint32_t i {pos}; i < size_; ++i)
 			if (str_[i] == c)
@@ -152,7 +152,7 @@ namespace mc
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::rfind(string_view const& str, uint32_t pos)
+	uint32_t string_view::rfind(string_view const& str, uint32_t pos) const
 	{
 		if (pos == UINT32_MAX)
 			pos = size_ - 1;
@@ -177,7 +177,7 @@ namespace mc
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::rfind(char c, uint32_t pos)
+	uint32_t string_view::rfind(char c, uint32_t pos) const
 	{
 		if (pos == UINT32_MAX)
 			pos = size_ - 1;
