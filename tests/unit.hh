@@ -29,7 +29,7 @@
 	void        test_##Name::run()
 
 #define CHECK_EQ(a, b)                                                                   \
-	if (a != b)                                                                          \
+	if ((a) != (b))                                                                      \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \
@@ -41,7 +41,7 @@
 	}
 
 #define CHECK_NE(a, b)                                                                   \
-	if (a == b)                                                                          \
+	if ((a) == (b))                                                                      \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \
@@ -53,7 +53,7 @@
 	}
 
 #define CHECK_GT(a, b)                                                                   \
-	if (a <= b)                                                                          \
+	if ((a) <= (b))                                                                      \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \
@@ -65,7 +65,7 @@
 	}
 
 #define CHECK_GE(a, b)                                                                   \
-	if (a < b)                                                                           \
+	if ((a) < (b))                                                                       \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \
@@ -77,7 +77,7 @@
 	}
 
 #define CHECK_LT(a, b)                                                                   \
-	if (a >= b)                                                                          \
+	if ((a) >= (b))                                                                      \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \
@@ -89,7 +89,7 @@
 	}
 
 #define CHECK_LE(a, b)                                                                   \
-	if (a > b)                                                                           \
+	if ((a) > (b))                                                                       \
 	{                                                                                    \
 		++checks_fail_cnt;                                                               \
 		++checks_cnt;                                                                    \

@@ -201,31 +201,11 @@ namespace mc
 		return strncmp(str_, str.str_, len_) == 0;
 	}
 
-	bool string_view::operator==(char const* str) const
-	{
-		uint32_t len = strlen(str);
-		if (len_ != len)
-			return false;
-		return strncmp(str_, str, len_) == 0;
-	}
-
 	std::strong_ordering string_view::operator<=>(string_view str) const
 	{
 		if (this == &str)
 			return std::strong_ordering::equal;
 
-		int32_t res = compare(str);
-
-		if (res > 0)
-			return std::strong_ordering::greater;
-		else if (res < 0)
-			return std::strong_ordering::less;
-		else
-			return std::strong_ordering::equivalent;
-	}
-
-	std::strong_ordering string_view::operator<=>(char const* str) const
-	{
 		int32_t res = compare(str);
 
 		if (res > 0)

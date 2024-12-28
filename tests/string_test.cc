@@ -1255,4 +1255,33 @@ GROUP(string)
 		uint32_t res13 = str1.rfind('Z');
 		CHECK_EQ(res13, UINT32_MAX);
 	}
+
+	TEST(comparison)
+	{
+		mc::string str0("Hello World!");
+
+		CHECK_EQ(str0 == mc::string("Hello World!"), true);
+		CHECK_EQ(str0 == mc::string("Hello World!!"), false);
+		CHECK_EQ(str0 == mc::string("Hello World"), false);
+
+		CHECK_EQ(str0 <=> mc::string("Hello World!"), 0);
+		CHECK_LT(str0 <=> mc::string("Hello World!!"), 0);
+		CHECK_GT(str0 <=> mc::string("Hello World"), 0);
+
+		CHECK_EQ(str0 == mc::string_view("Hello World!"), true);
+		CHECK_EQ(str0 == mc::string_view("Hello World!!"), false);
+		CHECK_EQ(str0 == mc::string_view("Hello World"), false);
+
+		CHECK_EQ(str0 <=> mc::string_view("Hello World!"), 0);
+		CHECK_LT(str0 <=> mc::string_view("Hello World!!"), 0);
+		CHECK_GT(str0 <=> mc::string_view("Hello World"), 0);
+
+		CHECK_EQ(str0 == "Hello World!", true);
+		CHECK_EQ(str0 == "Hello World!!", false);
+		CHECK_EQ(str0 == "Hello World", false);
+
+		CHECK_EQ(str0 <=> "Hello World!", 0);
+		CHECK_LT(str0 <=> "Hello World!!", 0);
+		CHECK_GT(str0 <=> "Hello World", 0);
+	}
 }

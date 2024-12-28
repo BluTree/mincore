@@ -2025,4 +2025,64 @@ namespace mc
 				return i - 1;
 		return UINT32_MAX;
 	}
+
+	bool string::operator==(string const& str) const
+	{
+		if (SIZE(*this) != SIZE(str))
+			return false;
+		return strncmp(DATA(*this), DATA(str), SIZE(*this)) == 0;
+	}
+
+	bool string::operator==(string_view str) const
+	{
+		if (SIZE(*this) != str.size())
+			return false;
+		return strncmp(DATA(*this), str.data(), SIZE(*this)) == 0;
+	}
+
+	bool string::operator==(char const* str) const
+	{
+		if (SIZE(*this) != strlen(str))
+			return false;
+		return strncmp(DATA(*this), str, SIZE(*this)) == 0;
+	}
+
+	std::strong_ordering string::operator<=>(string const& str) const
+	{
+		if (this == &str)
+			return std::strong_ordering::equal;
+
+		int32_t res = compare(str);
+
+		if (res > 0)
+			return std::strong_ordering::greater;
+		else if (res < 0)
+			return std::strong_ordering::less;
+		else
+			return std::strong_ordering::equivalent;
+	}
+
+	std::strong_ordering string::operator<=>(string_view str) const
+	{
+		int32_t res = compare(str);
+
+		if (res > 0)
+			return std::strong_ordering::greater;
+		else if (res < 0)
+			return std::strong_ordering::less;
+		else
+			return std::strong_ordering::equivalent;
+	}
+
+	std::strong_ordering string::operator<=>(char const* str) const
+	{
+		int32_t res = compare(str);
+
+		if (res > 0)
+			return std::strong_ordering::greater;
+		else if (res < 0)
+			return std::strong_ordering::less;
+		else
+			return std::strong_ordering::equivalent;
+	}
 } // namespace mc

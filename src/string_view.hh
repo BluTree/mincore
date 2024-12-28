@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#include "alloc.hh"
 #include "compare.hh"
 
 using nullptr_t = decltype(nullptr);
@@ -46,10 +45,8 @@ namespace mc
 		uint32_t rfind(char c, uint32_t pos = UINT32_MAX) const;
 
 		bool operator==(string_view str) const;
-		bool operator==(char const* str) const;
 
 		std::strong_ordering operator<=>(string_view str) const;
-		std::strong_ordering operator<=>(char const* str) const;
 
 	private:
 		char const* str_ {nullptr};
