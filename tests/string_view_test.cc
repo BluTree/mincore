@@ -237,4 +237,20 @@ GROUP(string_view)
 		uint32_t res13 = sv1.rfind('Z');
 		CHECK_EQ(res13, UINT32_MAX);
 	}
+
+	TEST(comparison)
+	{
+		mc::string_view sv0("Hello World!");
+		mc::string_view sv1("Hello World!");
+		mc::string_view sv2("Hello World!!");
+		mc::string_view sv3("Hello World");
+
+		CHECK_EQ(sv0 == sv1, true);
+		CHECK_EQ(sv0 == sv2, false);
+		CHECK_EQ(sv0 == sv3, false);
+
+		CHECK_EQ(sv0 <=> sv1, 0);
+		CHECK_LT(sv0 <=> sv2, 0);
+		CHECK_GT(sv0 <=> sv3, 0);
+	}
 }

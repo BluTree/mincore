@@ -6,6 +6,11 @@
 
 namespace mc
 {
+#define SIZE(str) ((str).len_ & ~is_large_flag)
+#define DATA(str)                                                                        \
+	(((str).len_ & is_large_flag) == 0 ? (str).small_.str_ : (str).large_.str_)
+#define IS_LARGE(str) (((str).len_ & is_large_flag) != 0)
+
 	// The user-defined ctor is needed because clang and gcc (< 13) misunderstand the
 	// union not being trivially constructible.
 	// See https://github.com/llvm/llvm-project/pull/82407 for the clang fix.
@@ -59,7 +64,7 @@ namespace mc
 	string::string(string_view str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			len_ = str.size();
+			len_ = str.size() - pos;
 		else
 			len_ = count;
 
@@ -84,13 +89,13 @@ namespace mc
 	string::string(string const& str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			len_ = str.size();
+			len_ = SIZE(str) - pos;
 		else
 			len_ = count;
 
 		len_ &= ~is_large_flag;
 
-		if (str.is_large())
+		if (IS_LARGE(str))
 		{
 			if (len_ < small_size)
 			{
@@ -117,16 +122,16 @@ namespace mc
 	string::string(string&& str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			len_ = str.size() - pos;
+			len_ = SIZE(str) - pos;
 		else
 			len_ = count;
 
-		len_ = (len_ & ~is_large_flag) | (str.len_ & is_large_flag);
-		if (is_large())
+		len_ = SIZE(*this) | (str.len_ & is_large_flag);
+		if (IS_LARGE(*this))
 		{
 			large_ = str.large_;
 			memmove(large_.str_, large_.str_ + pos, count);
-			large_.str_[(len_ & ~is_large_flag)] = '\0';
+			large_.str_[SIZE(*this)] = '\0';
 			str.large_.str_ = nullptr;
 			str.large_.cap_ = 0;
 		}
@@ -161,73 +166,73 @@ namespace mc
 
 	string::~string()
 	{
-		if (is_large())
+		if (IS_LARGE(*this))
 			free(large_.str_, large_.cap_ + 1, alignof(char));
 	}
 
 	bool string::empty() const
 	{
-		return (len_ & ~is_large_flag) == 0;
+		return SIZE(*this) == 0;
 	}
 
 	uint32_t string::size() const
 	{
-		return len_ & ~is_large_flag;
+		return SIZE(*this);
 	}
 
 	uint32_t string::capacity() const
 	{
-		return is_large() ? large_.cap_ : small_size - 1;
+		return IS_LARGE(*this) ? large_.cap_ : small_size - 1;
 	}
 
 	char* string::data() &
 	{
-		return is_large() ? large_.str_ : small_.str_;
+		return DATA(*this);
 	}
 
 	char const* string::data() const&
 	{
-		return is_large() ? large_.str_ : small_.str_;
+		return DATA(*this);
 	}
 
 	string::operator string_view() const
 	{
-		return string_view(data(), size());
+		return string_view(DATA(*this), size());
 	}
 
 	char& string::operator[](uint32_t pos) &
 	{
-		return data()[pos];
+		return DATA(*this)[pos];
 	}
 
 	char const& string::operator[](uint32_t pos) const&
 	{
-		return data()[pos];
+		return DATA(*this)[pos];
 	}
 
 	char& string::front() &
 	{
-		return data()[0];
+		return DATA(*this)[0];
 	}
 
 	char const& string::front() const&
 	{
-		return data()[0];
+		return DATA(*this)[0];
 	}
 
 	char& string::back() &
 	{
-		return data()[len_ & ~is_large_flag - 1];
+		return DATA(*this)[SIZE(*this) - 1];
 	}
 
 	char const& string::back() const&
 	{
-		return data()[len_ & ~is_large_flag - 1];
+		return DATA(*this)[SIZE(*this) - 1];
 	}
 
 	void string::clear()
 	{
-		if (is_large())
+		if (IS_LARGE(*this))
 			large_.str_[0] = '\0';
 		else
 			small_.str_[0] = '\0';
@@ -239,10 +244,10 @@ namespace mc
 	{
 		if (cap > small_size)
 		{
-			if (is_large())
+			if (IS_LARGE(*this))
 			{
 				char* new_str = reinterpret_cast<char*>(alloc(cap + 1, alignof(char)));
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag) + 1);
+				memcpy(new_str, large_.str_, SIZE(*this) + 1);
 				free(large_.str_, large_.cap_ + 1, alignof(char));
 
 				large_.str_ = new_str;
@@ -251,7 +256,7 @@ namespace mc
 			else
 			{
 				char* new_str = reinterpret_cast<char*>(alloc(cap + 1, alignof(char)));
-				memcpy(new_str, small_.str_, (len_ & ~is_large_flag) + 1);
+				memcpy(new_str, small_.str_, SIZE(*this) + 1);
 				free(large_.str_, large_.cap_ + 1, alignof(char));
 
 				large_.str_ = new_str;
@@ -264,13 +269,13 @@ namespace mc
 
 	void string::fit()
 	{
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
-			uint32_t len = len_ & ~is_large_flag;
+			uint32_t len = SIZE(*this);
 			if (len != large_.cap_)
 			{
 				char* new_str = reinterpret_cast<char*>(alloc(len + 1, alignof(char)));
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag) + 1);
+				memcpy(new_str, large_.str_, SIZE(*this) + 1);
 				free(large_.str_, large_.cap_ + 1, alignof(char));
 
 				large_.str_ = new_str;
@@ -282,9 +287,9 @@ namespace mc
 	void string::resize(uint32_t size, char c)
 	{
 		size &= ~is_large_flag;
-		if (size > (len_ & ~is_large_flag))
+		if (size > SIZE(*this))
 		{
-			if (is_large())
+			if (IS_LARGE(*this))
 			{
 				if (size > large_.cap_)
 				{
@@ -295,9 +300,8 @@ namespace mc
 					char* new_str =
 						reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-					memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-					memset(new_str + (len_ & ~is_large_flag), c,
-					       size - (len_ & ~is_large_flag));
+					memcpy(new_str, large_.str_, SIZE(*this));
+					memset(new_str + SIZE(*this), c, size - SIZE(*this));
 					new_str[size] = '\0';
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -307,8 +311,7 @@ namespace mc
 				}
 				else
 				{
-					memset(large_.str_ + (len_ & ~is_large_flag), c,
-					       size - (len_ & ~is_large_flag));
+					memset(large_.str_ + SIZE(*this), c, size - SIZE(*this));
 					large_.str_[size] = '\0';
 				}
 
@@ -318,9 +321,8 @@ namespace mc
 			{
 				char* new_str = reinterpret_cast<char*>(alloc(size + 1, alignof(char)));
 
-				memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-				memset(new_str + (len_ & ~is_large_flag), c,
-				       size - (len_ & ~is_large_flag));
+				memcpy(new_str, small_.str_, SIZE(*this));
+				memset(new_str + SIZE(*this), c, size - SIZE(*this));
 				new_str[size] = '\0';
 
 				large_.str_ = new_str;
@@ -330,14 +332,13 @@ namespace mc
 			}
 			else
 			{
-				memset(small_.str_ + (len_ & ~is_large_flag), c,
-				       size - (len_ & ~is_large_flag));
+				memset(small_.str_ + SIZE(*this), c, size - SIZE(*this));
 				small_.str_[size] = '\0';
 
 				len_ = size;
 			}
 		}
-		else if (is_large())
+		else if (IS_LARGE(*this))
 		{
 			large_.str_[size] = '\0';
 
@@ -354,7 +355,7 @@ namespace mc
 	{
 		count &= ~is_large_flag;
 
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			if (count >= large_.cap_)
 			{
@@ -398,7 +399,7 @@ namespace mc
 
 		count &= ~is_large_flag;
 
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			if (count >= large_.cap_)
 			{
@@ -442,7 +443,7 @@ namespace mc
 
 		count &= ~is_large_flag;
 
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			if (count >= large_.cap_)
 			{
@@ -482,11 +483,11 @@ namespace mc
 	void string::assign(string const& str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			count = str.size() - pos;
+			count = SIZE(str) - pos;
 
 		count &= ~is_large_flag;
 
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			if (count >= large_.cap_)
 			{
@@ -501,7 +502,7 @@ namespace mc
 				large_.cap_ = new_cap;
 				large_.str_ = new_str;
 			}
-			memcpy(large_.str_, str.data() + pos, count);
+			memcpy(large_.str_, DATA(str) + pos, count);
 			large_.str_[count] = '\0';
 			len_ = count | is_large_flag;
 		}
@@ -511,13 +512,13 @@ namespace mc
 
 			large_.cap_ = count;
 			large_.str_ = new_str;
-			memcpy(large_.str_, str.data() + pos, count);
+			memcpy(large_.str_, DATA(str) + pos, count);
 			large_.str_[count] = '\0';
 			len_ = count | is_large_flag;
 		}
 		else
 		{
-			memcpy(small_.str_, str.data() + pos, count);
+			memcpy(small_.str_, DATA(str) + pos, count);
 			small_.str_[count] = '\0';
 			len_ = count;
 		}
@@ -527,7 +528,7 @@ namespace mc
 	{
 		uint32_t str_len = static_cast<uint32_t>(ilist.size()) & ~is_large_flag;
 
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			if (str_len >= large_.cap_)
 			{
@@ -566,11 +567,11 @@ namespace mc
 
 	void string::assign(string&& str)
 	{
-		if (is_large())
+		if (IS_LARGE(*this))
 			free(large_.str_, large_.cap_ + 1, alignof(char));
 
 		len_ = str.len_;
-		if (is_large())
+		if (IS_LARGE(*this))
 		{
 			large_.str_ = str.large_.str_;
 			large_.cap_ = str.large_.cap_;
@@ -624,8 +625,8 @@ namespace mc
 		{
 			count &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) + count;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) + count;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -638,7 +639,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memset(new_str + idx, c, count);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -649,7 +650,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memset(large_.str_ + idx, c, count);
 				}
 
@@ -661,8 +662,7 @@ namespace mc
 					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
 				memcpy(new_str, small_.str_, idx);
-				memmove(new_str + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				memmove(new_str + idx + count, small_.str_ + idx, SIZE(*this) - idx + 1);
 				memset(new_str + idx, c, count);
 
 				large_.str_ = new_str;
@@ -673,7 +673,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				        SIZE(*this) - idx + 1);
 				memset(small_.str_ + idx, c, count);
 
 				len_ = new_len;
@@ -694,8 +694,8 @@ namespace mc
 
 			count &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) + count;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) + count;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -708,7 +708,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(new_str + idx, str, count);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -719,7 +719,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(large_.str_ + idx, str, count);
 				}
 
@@ -731,8 +731,7 @@ namespace mc
 					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
 				memcpy(new_str, small_.str_, idx);
-				memmove(new_str + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				memmove(new_str + idx + count, small_.str_ + idx, SIZE(*this) - idx + 1);
 				memcpy(new_str + idx, str, count);
 
 				large_.str_ = new_str;
@@ -743,7 +742,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				        SIZE(*this) - idx + 1);
 				memcpy(small_.str_ + idx, str, count);
 
 				len_ = new_len;
@@ -760,12 +759,12 @@ namespace mc
 		else
 		{
 			if (count == UINT32_MAX)
-				count = str.size() - pos;
+				count = SIZE(str) - pos;
 
 			count &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) + count;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) + count;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -778,8 +777,8 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
-					memcpy(new_str + idx, str.data() + pos, count);
+					        SIZE(*this) - idx + 1);
+					memcpy(new_str + idx, DATA(str) + pos, count);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
 
@@ -789,8 +788,8 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
-					memcpy(large_.str_ + idx, str.data() + pos, count);
+					        SIZE(*this) - idx + 1);
+					memcpy(large_.str_ + idx, DATA(str) + pos, count);
 				}
 
 				len_ = new_len | is_large_flag;
@@ -801,9 +800,8 @@ namespace mc
 					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
 				memcpy(new_str, small_.str_, idx);
-				memmove(new_str + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
-				memcpy(new_str + idx, str.data() + pos, count);
+				memmove(new_str + idx + count, small_.str_ + idx, SIZE(*this) - idx + 1);
+				memcpy(new_str + idx, DATA(str) + pos, count);
 
 				large_.str_ = new_str;
 				large_.cap_ = new_len;
@@ -813,8 +811,8 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
-				memcpy(small_.str_ + idx, str.data() + pos, count);
+				        SIZE(*this) - idx + 1);
+				memcpy(small_.str_ + idx, DATA(str) + pos, count);
 
 				len_ = new_len;
 			}
@@ -835,8 +833,8 @@ namespace mc
 
 			count &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) + count;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) + count;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -849,7 +847,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(new_str + idx, str.data() + pos, count);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -860,7 +858,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(large_.str_ + idx, str.data() + pos, count);
 				}
 
@@ -872,8 +870,7 @@ namespace mc
 					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
 				memcpy(new_str, small_.str_, idx);
-				memmove(new_str + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				memmove(new_str + idx + count, small_.str_ + idx, SIZE(*this) - idx + 1);
 				memcpy(new_str + idx, str.data() + pos, count);
 
 				large_.str_ = new_str;
@@ -884,7 +881,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				        SIZE(*this) - idx + 1);
 				memcpy(small_.str_ + idx, str.data() + pos, count);
 
 				len_ = new_len;
@@ -902,8 +899,8 @@ namespace mc
 		{
 			uint32_t count = ilist.size() & ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) + count;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) + count;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -916,7 +913,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(new_str + idx, ilist.begin(), count);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -927,7 +924,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count, large_.str_ + idx,
-					        (len_ & ~is_large_flag) - idx + 1);
+					        SIZE(*this) - idx + 1);
 					memcpy(large_.str_ + idx, ilist.begin(), count);
 				}
 
@@ -939,8 +936,7 @@ namespace mc
 					reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
 				memcpy(new_str, small_.str_, idx);
-				memmove(new_str + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				memmove(new_str + idx + count, small_.str_ + idx, SIZE(*this) - idx + 1);
 				memcpy(new_str + idx, ilist.begin(), count);
 
 				large_.str_ = new_str;
@@ -951,7 +947,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count, small_.str_ + idx,
-				        (len_ & ~is_large_flag) - idx + 1);
+				        SIZE(*this) - idx + 1);
 				memcpy(small_.str_ + idx, ilist.begin(), count);
 
 				len_ = new_len;
@@ -963,8 +959,8 @@ namespace mc
 	{
 		count &= ~is_large_flag;
 
-		uint32_t new_len = (len_ & ~is_large_flag) + count;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + count;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -975,8 +971,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				memset(new_str + (len_ & ~is_large_flag), c, count);
+				memcpy(new_str, large_.str_, SIZE(*this));
+				memset(new_str + SIZE(*this), c, count);
 				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -986,7 +982,7 @@ namespace mc
 			}
 			else
 			{
-				memset(large_.str_ + (len_ & ~is_large_flag), c, count);
+				memset(large_.str_ + SIZE(*this), c, count);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -996,8 +992,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			memset(new_str + (len_ & ~is_large_flag), c, count);
+			memcpy(new_str, small_.str_, SIZE(*this));
+			memset(new_str + SIZE(*this), c, count);
 			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
@@ -1007,7 +1003,7 @@ namespace mc
 		}
 		else
 		{
-			memset(small_.str_ + (len_ & ~is_large_flag), c, count);
+			memset(small_.str_ + SIZE(*this), c, count);
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1021,8 +1017,8 @@ namespace mc
 
 		count &= ~is_large_flag;
 
-		uint32_t new_len = (len_ & ~is_large_flag) + count;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + count;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -1033,8 +1029,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				memcpy(new_str + (len_ & ~is_large_flag), str, count);
+				memcpy(new_str, large_.str_, SIZE(*this));
+				memcpy(new_str + SIZE(*this), str, count);
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
 
@@ -1043,7 +1039,7 @@ namespace mc
 			}
 			else
 			{
-				memcpy(large_.str_ + (len_ & ~is_large_flag), str, count);
+				memcpy(large_.str_ + SIZE(*this), str, count);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -1053,8 +1049,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			memcpy(new_str + (len_ & ~is_large_flag), str, count);
+			memcpy(new_str, small_.str_, SIZE(*this));
+			memcpy(new_str + SIZE(*this), str, count);
 
 			large_.str_ = new_str;
 			large_.cap_ = new_len;
@@ -1063,7 +1059,7 @@ namespace mc
 		}
 		else
 		{
-			memcpy(small_.str_ + (len_ & ~is_large_flag), str, count);
+			memcpy(small_.str_ + SIZE(*this), str, count);
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1073,12 +1069,12 @@ namespace mc
 	void string::append(string const& str, uint32_t pos, uint32_t count)
 	{
 		if (count == UINT32_MAX)
-			count = str.size() - pos;
+			count = SIZE(str) - pos;
 
 		count &= ~is_large_flag;
 
-		uint32_t new_len = (len_ & ~is_large_flag) + count;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + count;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -1089,8 +1085,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				memcpy(new_str + (len_ & ~is_large_flag), str.data() + pos, count);
+				memcpy(new_str, large_.str_, SIZE(*this));
+				memcpy(new_str + SIZE(*this), DATA(str) + pos, count);
 				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1100,7 +1096,7 @@ namespace mc
 			}
 			else
 			{
-				memcpy(large_.str_ + (len_ & ~is_large_flag), str.data() + pos, count);
+				memcpy(large_.str_ + SIZE(*this), DATA(str) + pos, count);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -1110,8 +1106,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			memcpy(new_str + (len_ & ~is_large_flag), str.data() + pos, count);
+			memcpy(new_str, small_.str_, SIZE(*this));
+			memcpy(new_str + SIZE(*this), DATA(str) + pos, count);
 			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
@@ -1121,7 +1117,7 @@ namespace mc
 		}
 		else
 		{
-			memcpy(small_.str_ + (len_ & ~is_large_flag), str.data() + pos, count);
+			memcpy(small_.str_ + SIZE(*this), DATA(str) + pos, count);
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1135,8 +1131,8 @@ namespace mc
 
 		count &= ~is_large_flag;
 
-		uint32_t new_len = (len_ & ~is_large_flag) + count;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + count;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -1147,8 +1143,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				memcpy(new_str + (len_ & ~is_large_flag), str.data() + pos, count);
+				memcpy(new_str, large_.str_, SIZE(*this));
+				memcpy(new_str + SIZE(*this), str.data() + pos, count);
 				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1158,7 +1154,7 @@ namespace mc
 			}
 			else
 			{
-				memcpy(large_.str_ + (len_ & ~is_large_flag), str.data() + pos, count);
+				memcpy(large_.str_ + SIZE(*this), str.data() + pos, count);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -1168,8 +1164,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			memcpy(new_str + (len_ & ~is_large_flag), str.data() + pos, count);
+			memcpy(new_str, small_.str_, SIZE(*this));
+			memcpy(new_str + SIZE(*this), str.data() + pos, count);
 			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
@@ -1179,7 +1175,7 @@ namespace mc
 		}
 		else
 		{
-			memcpy(small_.str_ + (len_ & ~is_large_flag), str.data() + pos, count);
+			memcpy(small_.str_ + SIZE(*this), str.data() + pos, count);
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1190,8 +1186,8 @@ namespace mc
 	{
 		uint32_t count = ilist.size() & ~is_large_flag;
 
-		uint32_t new_len = (len_ & ~is_large_flag) + count;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + count;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -1202,8 +1198,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				memcpy(new_str + (len_ & ~is_large_flag), ilist.begin(), count);
+				memcpy(new_str, large_.str_, SIZE(*this));
+				memcpy(new_str + SIZE(*this), ilist.begin(), count);
 				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1213,7 +1209,7 @@ namespace mc
 			}
 			else
 			{
-				memcpy(large_.str_ + (len_ & ~is_large_flag), ilist.begin(), count);
+				memcpy(large_.str_ + SIZE(*this), ilist.begin(), count);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -1223,8 +1219,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			memcpy(new_str + (len_ & ~is_large_flag), ilist.begin(), count);
+			memcpy(new_str, small_.str_, SIZE(*this));
+			memcpy(new_str + SIZE(*this), ilist.begin(), count);
 			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
@@ -1234,7 +1230,7 @@ namespace mc
 		}
 		else
 		{
-			memcpy(small_.str_ + (len_ & ~is_large_flag), ilist.begin(), count);
+			memcpy(small_.str_ + SIZE(*this), ilist.begin(), count);
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1276,8 +1272,8 @@ namespace mc
 			count &= ~is_large_flag;
 			count2 &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) - count + count2;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -1290,7 +1286,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memset(new_str + idx, c, count2);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1301,7 +1297,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memset(large_.str_ + idx, c, count2);
 				}
 
@@ -1314,7 +1310,7 @@ namespace mc
 
 				memcpy(new_str, small_.str_, idx);
 				memmove(new_str + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memset(new_str + idx, c, count2);
 
 				large_.str_ = new_str;
@@ -1325,7 +1321,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memset(small_.str_ + idx, c, count2);
 
 				len_ = new_len;
@@ -1347,8 +1343,8 @@ namespace mc
 			count &= ~is_large_flag;
 			count2 &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) - count + count2;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -1361,7 +1357,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(new_str + idx, str, count2);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1372,7 +1368,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(large_.str_ + idx, str, count2);
 				}
 
@@ -1385,7 +1381,7 @@ namespace mc
 
 				memcpy(new_str, small_.str_, idx);
 				memmove(new_str + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(new_str + idx, str, count2);
 
 				large_.str_ = new_str;
@@ -1396,7 +1392,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(small_.str_ + idx, str, count2);
 
 				len_ = new_len;
@@ -1414,13 +1410,13 @@ namespace mc
 		else
 		{
 			if (count2 == UINT32_MAX)
-				count2 = str.size() - pos;
+				count2 = SIZE(str) - pos;
 
 			count &= ~is_large_flag;
 			count2 &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) - count + count2;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -1433,8 +1429,8 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
-					memcpy(new_str + idx, str.data() + pos, count2);
+					        SIZE(*this) - idx - count + 1);
+					memcpy(new_str + idx, DATA(str) + pos, count2);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
 
@@ -1444,8 +1440,8 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
-					memcpy(large_.str_ + idx, str.data() + pos, count2);
+					        SIZE(*this) - idx - count + 1);
+					memcpy(large_.str_ + idx, DATA(str) + pos, count2);
 				}
 
 				len_ = new_len | is_large_flag;
@@ -1457,8 +1453,8 @@ namespace mc
 
 				memcpy(new_str, small_.str_, idx);
 				memmove(new_str + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
-				memcpy(new_str + idx, str.data() + pos, count2);
+				        SIZE(*this) - idx - count + 1);
+				memcpy(new_str + idx, DATA(str) + pos, count2);
 
 				large_.str_ = new_str;
 				large_.cap_ = new_len;
@@ -1468,8 +1464,8 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
-				memcpy(small_.str_ + idx, str.data() + pos, count2);
+				        SIZE(*this) - idx - count + 1);
+				memcpy(small_.str_ + idx, DATA(str) + pos, count2);
 
 				len_ = new_len;
 			}
@@ -1491,8 +1487,8 @@ namespace mc
 			count &= ~is_large_flag;
 			count2 &= ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) - count + count2;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -1505,7 +1501,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(new_str + idx, str.data() + pos, count2);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1516,7 +1512,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(large_.str_ + idx, str.data() + pos, count2);
 				}
 
@@ -1529,7 +1525,7 @@ namespace mc
 
 				memcpy(new_str, small_.str_, idx);
 				memmove(new_str + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(new_str + idx, str.data() + pos, count2);
 
 				large_.str_ = new_str;
@@ -1540,7 +1536,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(small_.str_ + idx, str.data() + pos, count2);
 
 				len_ = new_len;
@@ -1559,8 +1555,8 @@ namespace mc
 			count &= ~is_large_flag;
 			uint32_t count2 = ilist.size() & ~is_large_flag;
 
-			uint32_t new_len = (len_ & ~is_large_flag) - count + count2;
-			if (is_large())
+			uint32_t new_len = SIZE(*this) - count + count2;
+			if (IS_LARGE(*this))
 			{
 				if (new_len > large_.cap_)
 				{
@@ -1573,7 +1569,7 @@ namespace mc
 
 					memcpy(new_str, large_.str_, idx);
 					memmove(new_str + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(new_str + idx, ilist.begin(), count2);
 
 					free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1584,7 +1580,7 @@ namespace mc
 				else
 				{
 					memmove(large_.str_ + idx + count2, large_.str_ + idx + count,
-					        (len_ & ~is_large_flag) - idx - count + 1);
+					        SIZE(*this) - idx - count + 1);
 					memcpy(large_.str_ + idx, ilist.begin(), count2);
 				}
 
@@ -1597,7 +1593,7 @@ namespace mc
 
 				memcpy(new_str, small_.str_, idx);
 				memmove(new_str + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(new_str + idx, ilist.begin(), count2);
 
 				large_.str_ = new_str;
@@ -1608,7 +1604,7 @@ namespace mc
 			else
 			{
 				memmove(small_.str_ + idx + count2, small_.str_ + idx + count,
-				        (len_ & ~is_large_flag) - idx - count + 1);
+				        SIZE(*this) - idx - count + 1);
 				memcpy(small_.str_ + idx, ilist.begin(), count2);
 
 				len_ = new_len;
@@ -1618,16 +1614,16 @@ namespace mc
 
 	void string::erase(uint32_t idx, uint32_t count)
 	{
-		memmove(data() + idx, data() + idx + count,
-		        (len_ & ~is_large_flag) - idx - count + 1);
+		memmove(DATA(*this) + idx, DATA(*this) + idx + count,
+		        SIZE(*this) - idx - count + 1);
 
-		len_ = (len_ & ~is_large_flag) - count | (len_ & is_large_flag);
+		len_ = SIZE(*this) - count | (len_ & is_large_flag);
 	}
 
 	void string::push_back(char c)
 	{
-		uint32_t new_len = (len_ & ~is_large_flag) + 1;
-		if (is_large())
+		uint32_t new_len = SIZE(*this) + 1;
+		if (IS_LARGE(*this))
 		{
 			if (new_len > large_.cap_)
 			{
@@ -1638,8 +1634,8 @@ namespace mc
 				char* new_str =
 					reinterpret_cast<char*>(alloc(new_cap + 1, alignof(char)));
 
-				memcpy(new_str, large_.str_, (len_ & ~is_large_flag));
-				new_str[(len_ & ~is_large_flag)] = c;
+				memcpy(new_str, large_.str_, SIZE(*this));
+				new_str[SIZE(*this)] = c;
 				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
@@ -1649,7 +1645,7 @@ namespace mc
 			}
 			else
 			{
-				memset(large_.str_ + (len_ & ~is_large_flag), c, 1);
+				memset(large_.str_ + SIZE(*this), c, 1);
 				large_.str_[new_len] = '\0';
 			}
 
@@ -1659,8 +1655,8 @@ namespace mc
 		{
 			char* new_str = reinterpret_cast<char*>(alloc(new_len + 1, alignof(char)));
 
-			memcpy(new_str, small_.str_, (len_ & ~is_large_flag));
-			new_str[(len_ & ~is_large_flag)] = c;
+			memcpy(new_str, small_.str_, SIZE(*this));
+			new_str[SIZE(*this)] = c;
 			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
@@ -1670,7 +1666,7 @@ namespace mc
 		}
 		else
 		{
-			small_.str_[(len_ & ~is_large_flag)] = c;
+			small_.str_[SIZE(*this)] = c;
 			small_.str_[new_len] = '\0';
 
 			len_ = new_len;
@@ -1679,8 +1675,8 @@ namespace mc
 
 	void string::pop_back()
 	{
-		data()[(len_ & ~is_large_flag) - 1] = '\0';
-		len_ = (len_ & ~is_large_flag) - 1 | (len_ & is_large_flag);
+		DATA(*this)[SIZE(*this) - 1] = '\0';
+		len_ = SIZE(*this) - 1 | (len_ & is_large_flag);
 	}
 
 	string string::substr(uint32_t pos, uint32_t size) const&
@@ -1695,90 +1691,109 @@ namespace mc
 
 	int32_t string::compare(string const& str) const
 	{
-		if ((len_ & ~is_large_flag) && !str.size())
-			return 1;
-		else if (!(len_ & ~is_large_flag) && str.size())
-			return -1;
-		else if (!(len_ & ~is_large_flag) && !str.size())
-			return 0;
-		else
-			return strcmp(data(), str.data());
+		uint32_t len = SIZE(*this) < SIZE(str) ? SIZE(*this) : SIZE(str);
+		int32_t  res = strncmp(DATA(*this), DATA(str), len);
+
+		if (res == 0)
+		{
+			if (SIZE(*this) < SIZE(str))
+				return -1;
+			else if (SIZE(*this) > SIZE(str))
+				return 1;
+		}
+
+		return res;
 	}
 
 	int32_t string::compare(string_view str) const
 	{
-		if ((len_ & ~is_large_flag) && !str.size())
-			return 1;
-		else if (!(len_ & ~is_large_flag) && str.size())
-			return -1;
-		else if (!(len_ & ~is_large_flag) && !str.size())
-			return 0;
-		else
-			return strncmp(data(), str.data(), str.size());
+		uint32_t len = SIZE(*this) < str.size() ? SIZE(*this) : str.size();
+		int32_t  res = strncmp(DATA(*this), str.data(), len);
+
+		if (res == 0)
+		{
+			if (SIZE(*this) < str.size())
+				return -1;
+			else if (SIZE(*this) > str.size())
+				return 1;
+		}
+
+		return res;
 	}
 
 	int32_t string::compare(char const* str) const
 	{
-		return strcmp(data(), str);
+		uint32_t str_len = static_cast<uint32_t>(strlen(str));
+		uint32_t len = SIZE(*this) < str_len ? SIZE(*this) : str_len;
+		int32_t  res = strncmp(DATA(*this), str, len);
+
+		if (res == 0)
+		{
+			if (SIZE(*this) < str_len)
+				return -1;
+			else if (SIZE(*this) > str_len)
+				return 1;
+		}
+
+		return res;
 	}
 
 	bool string::starts_with(string const& str) const
 	{
-		return strncmp(data(), str.data(), str.size()) == 0;
+		return strncmp(DATA(*this), DATA(str), SIZE(str)) == 0;
 	}
 
 	bool string::starts_with(string_view str) const
 	{
-		return strncmp(data(), str.data(), str.size()) == 0;
+		return strncmp(DATA(*this), str.data(), str.size()) == 0;
 	}
 
 	bool string::starts_with(char const* str) const
 	{
-		return strncmp(data(), str, strlen(str)) == 0;
+		return strncmp(DATA(*this), str, strlen(str)) == 0;
 	}
 
 	bool string::starts_with(char c) const
 	{
-		return data()[0] == c;
+		return DATA(*this)[0] == c;
 	}
 
 	bool string::ends_with(string const& str) const
 	{
-		return strncmp(data() + (len_ & ~is_large_flag) - str.size(), str.data(),
-		               str.size()) == 0;
+		return strncmp(DATA(*this) + SIZE(*this) - SIZE(str), DATA(str), SIZE(str)) == 0;
 	}
 
 	bool string::ends_with(string_view str) const
 	{
-		return strncmp(data() + (len_ & ~is_large_flag) - str.size(), str.data(),
-		               str.size()) == 0;
+		return strncmp(DATA(*this) + SIZE(*this) - str.size(), str.data(), str.size()) ==
+		       0;
 	}
 
 	bool string::ends_with(char const* str) const
 	{
 		uint32_t len = strlen(str);
-		return strncmp(data() + (len_ & ~is_large_flag) - len, str, len) == 0;
+		return strncmp(DATA(*this) + SIZE(*this) - len, str, len) == 0;
 	}
 
 	bool string::ends_with(char c) const
 	{
-		return data()[(len_ & ~is_large_flag) - 1] == c;
+		return DATA(*this)[SIZE(*this) - 1] == c;
 	}
 
 	bool string::contains(string const& str) const
 	{
-		if (str.size() > (len_ & ~is_large_flag) || str.size() == 0)
+		if (SIZE(str) > SIZE(*this) || SIZE(str) == 0)
 			return false;
 
 		for (uint32_t i {0}, j {0}; i < len_; ++i)
 		{
-			if (len_ - i < str.size() - j)
+			if (len_ - i < SIZE(str) - j)
 				return false;
 
-			if (data()[i] == str.data()[j])
+			if (DATA(*this)[i] == DATA(str)[j])
 			{
 				++j;
-				if (j == str.size())
+				if (j == SIZE(str))
 					return true;
 			}
 			else
@@ -1789,15 +1804,15 @@ namespace mc
 
 	bool string::contains(string_view str) const
 	{
-		if (str.size() > (len_ & ~is_large_flag) || str.size() == 0)
+		if (str.size() > SIZE(*this) || str.size() == 0)
 			return false;
 
-		for (uint32_t i {0}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		for (uint32_t i {0}, j {0}; i < SIZE(*this); ++i)
 		{
-			if ((len_ & ~is_large_flag) - i < str.size() - j)
+			if (SIZE(*this) - i < str.size() - j)
 				return false;
 
-			if (data()[i] == str.data()[j])
+			if (DATA(*this)[i] == str.data()[j])
 			{
 				++j;
 				if (j == str.size())
@@ -1812,15 +1827,15 @@ namespace mc
 	bool string::contains(char const* str) const
 	{
 		uint32_t len = strlen(str);
-		if (len > (len_ & ~is_large_flag) || len == 0)
+		if (len > SIZE(*this) || len == 0)
 			return false;
 
-		for (uint32_t i {0}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		for (uint32_t i {0}, j {0}; i < SIZE(*this); ++i)
 		{
-			if ((len_ & ~is_large_flag) - i < len - j)
+			if (SIZE(*this) - i < len - j)
 				return false;
 
-			if (data()[i] == str[j])
+			if (DATA(*this)[i] == str[j])
 			{
 				++j;
 				if (j == len)
@@ -1834,29 +1849,29 @@ namespace mc
 
 	bool string::contains(char c) const
 	{
-		for (uint32_t i {0}; i < (len_ & ~is_large_flag); ++i)
-			if (data()[i] == c)
+		for (uint32_t i {0}; i < SIZE(*this); ++i)
+			if (DATA(*this)[i] == c)
 				return true;
 		return false;
 	}
 
 	uint32_t string::find(string const& str, uint32_t pos) const
 	{
-		if (str.size() > (len_ & ~is_large_flag) - pos || str.size() == 0)
+		if (SIZE(str) > SIZE(*this) - pos || SIZE(str) == 0)
 			return UINT32_MAX;
 
 		uint32_t match = 0;
-		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		for (uint32_t i {pos}, j {0}; i < SIZE(*this); ++i)
 		{
-			if ((len_ & ~is_large_flag) - i < str.size() - j)
+			if (SIZE(*this) - i < SIZE(str) - j)
 				return UINT32_MAX;
 
-			if (data()[i] == str.data()[j])
+			if (DATA(*this)[i] == DATA(str)[j])
 			{
 				if (j == 0)
 					match = i;
 				++j;
-				if (j == str.size())
+				if (j == SIZE(str))
 					return match;
 			}
 			else
@@ -1867,16 +1882,16 @@ namespace mc
 
 	uint32_t string::find(string_view str, uint32_t pos) const
 	{
-		if (str.size() > (len_ & ~is_large_flag) - pos || str.size() == 0)
+		if (str.size() > SIZE(*this) - pos || str.size() == 0)
 			return UINT32_MAX;
 
 		uint32_t match = 0;
-		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		for (uint32_t i {pos}, j {0}; i < SIZE(*this); ++i)
 		{
-			if ((len_ & ~is_large_flag) - i < str.size() - j)
+			if (SIZE(*this) - i < str.size() - j)
 				return UINT32_MAX;
 
-			if (data()[i] == str.data()[j])
+			if (DATA(*this)[i] == str.data()[j])
 			{
 				if (j == 0)
 					match = i;
@@ -1893,16 +1908,16 @@ namespace mc
 	uint32_t string::find(char const* str, uint32_t pos) const
 	{
 		uint32_t len = strlen(str);
-		if (len > (len_ & ~is_large_flag) - pos || len == 0)
+		if (len > SIZE(*this) - pos || len == 0)
 			return UINT32_MAX;
 
 		uint32_t match = 0;
-		for (uint32_t i {pos}, j {0}; i < (len_ & ~is_large_flag); ++i)
+		for (uint32_t i {pos}, j {0}; i < SIZE(*this); ++i)
 		{
-			if ((len_ & ~is_large_flag) - i < len - j)
+			if (SIZE(*this) - i < len - j)
 				return UINT32_MAX;
 
-			if (data()[i] == str[j])
+			if (DATA(*this)[i] == str[j])
 			{
 				if (j == 0)
 					match = i;
@@ -1918,8 +1933,8 @@ namespace mc
 
 	uint32_t string::find(char c, uint32_t pos) const
 	{
-		for (uint32_t i {pos}; i < (len_ & ~is_large_flag); ++i)
-			if (data()[i] == c)
+		for (uint32_t i {pos}; i < SIZE(*this); ++i)
+			if (DATA(*this)[i] == c)
 				return i;
 		return UINT32_MAX;
 	}
@@ -1927,24 +1942,24 @@ namespace mc
 	uint32_t string::rfind(string const& str, uint32_t pos) const
 	{
 		if (pos == UINT32_MAX)
-			pos = (len_ & ~is_large_flag) - 1;
+			pos = SIZE(*this) - 1;
 
-		if (str.size() > pos || str.size() == 0)
+		if (SIZE(str) > pos || SIZE(str) == 0)
 			return UINT32_MAX;
 
-		for (uint32_t i {pos + 1}, j {str.size()}; i > 0; --i)
+		for (uint32_t i {pos + 1}, j {SIZE(str)}; i > 0; --i)
 		{
 			if (i < j)
 				return UINT32_MAX;
 
-			if (data()[i - 1] == str.data()[j - 1])
+			if (DATA(*this)[i - 1] == DATA(str)[j - 1])
 			{
 				--j;
 				if (j == 0)
 					return i - 1;
 			}
 			else
-				j = str.size();
+				j = SIZE(str);
 		}
 		return UINT32_MAX;
 	}
@@ -1952,7 +1967,7 @@ namespace mc
 	uint32_t string::rfind(string_view str, uint32_t pos) const
 	{
 		if (pos == UINT32_MAX)
-			pos = (len_ & ~is_large_flag) - 1;
+			pos = SIZE(*this) - 1;
 
 		if (str.size() > pos || str.size() == 0)
 			return UINT32_MAX;
@@ -1962,7 +1977,7 @@ namespace mc
 			if (i < j)
 				return UINT32_MAX;
 
-			if (data()[i - 1] == str.data()[j - 1])
+			if (DATA(*this)[i - 1] == str.data()[j - 1])
 			{
 				--j;
 				if (j == 0)
@@ -1978,7 +1993,7 @@ namespace mc
 	{
 		uint32_t len = strlen(str);
 		if (pos == UINT32_MAX)
-			pos = (len_ & ~is_large_flag) - 1;
+			pos = SIZE(*this) - 1;
 
 		if (len > pos || len == 0)
 			return UINT32_MAX;
@@ -1988,7 +2003,7 @@ namespace mc
 			if (i < j)
 				return UINT32_MAX;
 
-			if (data()[i - 1] == str[j - 1])
+			if (DATA(*this)[i - 1] == str[j - 1])
 			{
 				--j;
 				if (j == 0)
@@ -2003,16 +2018,11 @@ namespace mc
 	uint32_t string::rfind(char c, uint32_t pos) const
 	{
 		if (pos == UINT32_MAX)
-			pos = (len_ & ~is_large_flag) - 1;
+			pos = SIZE(*this) - 1;
 
 		for (uint32_t i {pos + 1}; i > 0; --i)
-			if (data()[i - 1] == c)
+			if (DATA(*this)[i - 1] == c)
 				return i - 1;
 		return UINT32_MAX;
-	}
-
-	bool string::is_large() const
-	{
-		return (len_ & is_large_flag) == is_large_flag;
 	}
 } // namespace mc

@@ -128,8 +128,6 @@ namespace mc
 		static constexpr uint32_t small_size = 16;
 		static constexpr uint32_t is_large_flag = 0x8000'0000;
 
-		bool is_large() const;
-
 		union
 		{
 			struct
