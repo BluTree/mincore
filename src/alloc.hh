@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "config.hh"
+
 namespace mc
 {
 	using alloc_func = void*(uint64_t size, uint32_t alignment, void* ud);
@@ -23,6 +25,9 @@ namespace mc
 	void  free(void* ptr, uint64_t size, uint32_t alignment);
 }
 
+#ifdef NEW_USE_STD
+#include <new>
+#else
 // Internal functions declarations for placement new, to prevent including <new>
 #ifdef _WIN32
 #ifndef __PLACEMENT_NEW_INLINE
@@ -45,4 +50,5 @@ inline void* operator new[]([[maybe_unused]] size_t count, void* ptr) noexcept
 #else
 extern void* operator new(size_t count, void* ptr);
 extern void* operator new[](size_t count, void* ptr);
+#endif
 #endif

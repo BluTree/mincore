@@ -1,5 +1,10 @@
 #pragma once
 
+#include "config.hh"
+
+#ifdef INITIALIZER_LIST_USE_STD
+#include <initializer_list>
+#else
 #include <stdint.h>
 
 namespace std
@@ -55,3 +60,4 @@ namespace std
 	, size_ {size}
 	{}
 }
+#endif

@@ -1,5 +1,10 @@
 #pragma once
 
+#include "config.hh"
+
+#ifdef COMPARE_USE_STD
+#include <compare>
+#else
 #include <stdint.h>
 
 using nullptr_t = decltype(nullptr);
@@ -347,3 +352,5 @@ namespace std
 	constexpr strong_ordering const
 		strong_ordering::greater(internal::value_type::greater);
 }
+
+#endif
