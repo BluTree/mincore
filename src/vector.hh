@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "alloc.hh"
+#include "array_view.hh"
 #include "concepts.hh"
 #include "initializer_list.hh"
 
@@ -35,6 +36,8 @@ namespace mc
 		uint32_t capacity() const;
 		T*       data() &;
 		T const* data() const&;
+
+		operator array_view<T>() const;
 
 		T&       operator[](uint32_t idx) &;
 		T const& operator[](uint32_t idx) const&;
@@ -181,6 +184,12 @@ namespace mc
 	T const* vector<T>::data() const&
 	{
 		return arr_;
+	}
+
+	template <vector_type T>
+	vector<T>::operator array_view<T>() const
+	{
+		return {arr_, size_};
 	}
 
 	template <vector_type T>

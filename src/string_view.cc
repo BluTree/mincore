@@ -28,9 +28,9 @@ namespace mc
 		return str_;
 	}
 
-	char string_view::operator[](uint32_t pos) const
+	char string_view::operator[](uint32_t idx) const
 	{
-		return str_[pos];
+		return str_[idx];
 	}
 
 	char string_view::front() const
@@ -54,9 +54,9 @@ namespace mc
 		len_ -= size;
 	}
 
-	string_view string_view::substr(uint32_t pos, uint32_t size) const
+	string_view string_view::substr(uint32_t idx, uint32_t size) const
 	{
-		return {str_ + pos, size};
+		return {str_ + idx, size};
 	}
 
 	int32_t string_view::compare(string_view str) const
@@ -125,13 +125,13 @@ namespace mc
 		return false;
 	}
 
-	uint32_t string_view::find(string_view str, uint32_t pos) const
+	uint32_t string_view::find(string_view str, uint32_t idx) const
 	{
-		if (str.len_ > len_ - pos || str.len_ == 0)
+		if (str.len_ > len_ - idx || str.len_ == 0)
 			return UINT32_MAX;
 
 		uint32_t match = 0;
-		for (uint32_t i {pos}, j {0}; i < len_; ++i)
+		for (uint32_t i {idx}, j {0}; i < len_; ++i)
 		{
 			if (len_ - i < str.len_ - j)
 				return UINT32_MAX;
@@ -150,23 +150,23 @@ namespace mc
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::find(char c, uint32_t pos) const
+	uint32_t string_view::find(char c, uint32_t idx) const
 	{
-		for (uint32_t i {pos}; i < len_; ++i)
+		for (uint32_t i {idx}; i < len_; ++i)
 			if (str_[i] == c)
 				return i;
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::rfind(string_view str, uint32_t pos) const
+	uint32_t string_view::rfind(string_view str, uint32_t idx) const
 	{
-		if (pos == UINT32_MAX)
-			pos = len_ - 1;
+		if (idx == UINT32_MAX)
+			idx = len_ - 1;
 
-		if (str.len_ > pos || str.len_ == 0)
+		if (str.len_ > idx || str.len_ == 0)
 			return UINT32_MAX;
 
-		for (uint32_t i {pos + 1}, j {str.len_}; i > 0; --i)
+		for (uint32_t i {idx + 1}, j {str.len_}; i > 0; --i)
 		{
 			if (i < j)
 				return UINT32_MAX;
@@ -183,12 +183,12 @@ namespace mc
 		return UINT32_MAX;
 	}
 
-	uint32_t string_view::rfind(char c, uint32_t pos) const
+	uint32_t string_view::rfind(char c, uint32_t idx) const
 	{
-		if (pos == UINT32_MAX)
-			pos = len_ - 1;
+		if (idx == UINT32_MAX)
+			idx = len_ - 1;
 
-		for (uint32_t i {pos + 1}; i > 0; --i)
+		for (uint32_t i {idx + 1}; i > 0; --i)
 			if (str_[i - 1] == c)
 				return i - 1;
 		return UINT32_MAX;

@@ -17,14 +17,14 @@ unit_state::~unit_state()
 
 int unit_state::run_tests()
 {
-	bool success = true;
+	bool fail = false;
 	for (uint32_t i {0}; i < group_size; ++i)
 	{
 		printf("[%s]\n", groups[i]->name);
 		groups[i]->run();
 		if (groups[i]->tests_fail_cnt)
 		{
-			success = false;
+			fail = true;
 			printf("[" RED "fail" DEFAULT "] (%d/%d)\n\n",
 			       groups[i]->test_size - groups[i]->tests_fail_cnt,
 			       groups[i]->test_size);
@@ -46,7 +46,7 @@ int unit_state::run_tests()
 			printf("[%s] [" GREEN "pass" DEFAULT "] (%d/%d)\n", groups[i]->name,
 			       groups[i]->test_size, groups[i]->test_size);
 
-	return success;
+	return fail;
 }
 
 void unit_state::add_group(group_base* group)

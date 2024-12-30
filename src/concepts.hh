@@ -1,5 +1,7 @@
 #pragma once
 
+#include "alloc.hh" // Placement new definition
+
 // TODO switch to usage of type traits if (and probably when) created
 namespace mc
 {
