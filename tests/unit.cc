@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+namespace
+{}
+
 unit_state& unit_state::instance()
 {
 	static unit_state inst;
@@ -63,7 +66,19 @@ void unit_state::add_group(group_base* group)
 			realloc(groups, sizeof(group_base*) * group_cap));
 	}
 
-	groups[group_size] = group;
+	uint32_t pos = group_size;
+	while (pos > 0)
+	{
+		if (strcmp(group->name, groups[pos - 1]->name) >= 0)
+			break;
+
+		--pos;
+	}
+
+	for (uint32_t i {group_size}; i > pos; --i)
+		groups[i] = groups[i - 1];
+
+	groups[pos] = group;
 	++group_size;
 }
 
