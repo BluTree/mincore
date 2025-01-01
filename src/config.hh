@@ -16,3 +16,8 @@
 // If you are including std headers alongside mincore, you should enable this or
 // compilation errors will occur (function redefinition)
 // #define NEW_USE_STD
+
+// Size in bytes for the small string buffer, used for Small String Optimizations.
+// This should be always at least 16 bytes to use all the unused size of small string, and
+// multiple of 8 to prevent unused padding.
+#define STRING_SMALL_SIZE 16
