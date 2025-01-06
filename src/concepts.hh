@@ -46,4 +46,7 @@ namespace mc
 	template <typename T>
 	concept copy_assignable = assignable_from<T&, T&> && assignable_from<T&, T const&> &&
 	                          assignable_from<T&, T const>;
+
+	template <typename T>
+	concept integral = __is_integral(T);
 }

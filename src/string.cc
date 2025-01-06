@@ -130,7 +130,7 @@ namespace mc
 		if (IS_LARGE(*this))
 		{
 			large_ = str.large_;
-			memmove(large_.str_, large_.str_ + pos, count);
+			memmove(large_.str_, large_.str_ + pos, SIZE(*this));
 			large_.str_[SIZE(*this)] = '\0';
 			str.large_.str_ = nullptr;
 			str.large_.cap_ = 0;
@@ -138,7 +138,7 @@ namespace mc
 		else
 		{
 			small_ = str.small_;
-			memmove(small_.str_, small_.str_ + pos, count);
+			memmove(small_.str_, small_.str_ + pos, SIZE(*this));
 			small_.str_[len_] = '\0';
 		}
 
@@ -1031,6 +1031,7 @@ namespace mc
 
 				memcpy(new_str, large_.str_, SIZE(*this));
 				memcpy(new_str + SIZE(*this), str, count);
+				new_str[new_len] = '\0';
 
 				free(large_.str_, large_.cap_ + 1, alignof(char));
 
@@ -1051,6 +1052,7 @@ namespace mc
 
 			memcpy(new_str, small_.str_, SIZE(*this));
 			memcpy(new_str + SIZE(*this), str, count);
+			new_str[new_len] = '\0';
 
 			large_.str_ = new_str;
 			large_.cap_ = new_len;
