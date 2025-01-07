@@ -11,6 +11,9 @@ namespace mc
 	template <typename T>
 	constexpr bool is_pointer_v = __is_pointer(T);
 
+	template <typename T>
+	constexpr bool is_trivially_copyable_v = __is_trivially_copyable(T);
+
 	template <bool Cond, typename True, typename False>
 	struct conditional
 	{
