@@ -381,13 +381,49 @@ namespace mc
 	uint32_t vector<T>::emplace(uint32_t idx, Args&&... args)
 		requires constructible_from<T, Args...>
 	{
-		// TODO don't use generic realloc, to prevent useless move/copy
-		if (size_ + 1 > cap_)
+		bool realloc = size_ + 1 > cap_;
+		if (realloc)
 		{
+			uint32_t new_cap = 0;
 			if (!cap_)
-				realloc(1);
+				new_cap = 1;
 			else
-				realloc(cap_ * 2);
+				new_cap = cap_ * 2;
+
+			T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * new_cap, alignof(T)));
+
+			if constexpr (move_constructible<T>)
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i]));
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + 1}; i < size_ + 1; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i - 1]));
+					arr_[i - 1].~T();
+				}
+			}
+			else
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(arr_[i]);
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + 1}; i < size_ + 1; ++i)
+				{
+					new (new_arr + i) T(arr_[i - 1]);
+					arr_[i - 1].~T();
+				}
+			}
+
+			free(arr_, sizeof(T) * cap_, alignof(T));
+			cap_ = new_cap;
+			arr_ = new_arr;
 		}
 
 		if (idx == size_)
@@ -396,24 +432,27 @@ namespace mc
 		}
 		else
 		{
-			if constexpr (move_constructible<T>)
-				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
-			else
-				new (arr_ + size_) T(arr_[size_ - 1]);
-
-			for (uint32_t i {size_ - 1}; i > idx; --i)
+			if (!realloc)
 			{
-				if constexpr (move_assignable<T>)
-					arr_[i] = static_cast<T&&>(arr_[i - 1]);
+				if constexpr (move_constructible<T>)
+					new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
 				else
-				{
-					arr_[i] = arr_[i - 1];
-					arr_[i - 1].~T();
-				}
-			}
+					new (arr_ + size_) T(arr_[size_ - 1]);
 
-			if constexpr (move_assignable<T>)
-				arr_[idx].~T();
+				for (uint32_t i {size_ - 1}; i > idx; --i)
+				{
+					if constexpr (move_assignable<T>)
+						arr_[i] = static_cast<T&&>(arr_[i - 1]);
+					else
+					{
+						arr_[i] = arr_[i - 1];
+						arr_[i - 1].~T();
+					}
+				}
+
+				if constexpr (move_assignable<T>)
+					arr_[idx].~T();
+			}
 			new (arr_ + idx) T(static_cast<Args&&>(args)...);
 		}
 		++size_;
@@ -424,19 +463,53 @@ namespace mc
 	uint32_t vector<T>::insert(uint32_t idx, T const& val, uint32_t count)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
-		// TODO don't use generic realloc, to prevent useless move/copy
+		bool realloc = size_ + count > cap_;
 		if (size_ + count > cap_)
 		{
+			uint32_t new_cap = 0;
 			if (!cap_)
-				realloc(count);
+				new_cap = count;
 			else
 			{
-				uint32_t new_cap = cap_;
+				new_cap = cap_;
 				while (new_cap < size_ + count)
 					new_cap *= 2;
-
-				realloc(new_cap);
 			}
+
+			T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * new_cap, alignof(T)));
+
+			if constexpr (move_constructible<T>)
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i]));
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + count}; i < size_ + count; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i - count]));
+					arr_[i - count].~T();
+				}
+			}
+			else
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(arr_[i]);
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + count}; i < size_ + count; ++i)
+				{
+					new (new_arr + i) T(arr_[i - count]);
+					arr_[i - count].~T();
+				}
+			}
+
+			free(arr_, sizeof(T) * cap_, alignof(T));
+			cap_ = new_cap;
+			arr_ = new_arr;
 		}
 
 		if (idx == size_)
@@ -446,20 +519,23 @@ namespace mc
 		}
 		else
 		{
-			for (uint32_t i {size_}; i > size_ - count; --i)
-				if constexpr (move_constructible<T>)
-					new (arr_ + i - 1 + count) T(static_cast<T&&>(arr_[i - 1]));
-				else
-					new (arr_ + i - 1 + count) T(arr_[i - 1]);
-
-			for (uint32_t i {size_ - count}; i > idx; --i)
+			if (!realloc)
 			{
-				if constexpr (move_assignable<T>)
-					arr_[i - 1 + count] = static_cast<T&&>(arr_[i - 1]);
-				else
+				for (uint32_t i {size_}; i > size_ - count; --i)
+					if constexpr (move_constructible<T>)
+						new (arr_ + i - 1 + count) T(static_cast<T&&>(arr_[i - 1]));
+					else
+						new (arr_ + i - 1 + count) T(arr_[i - 1]);
+
+				for (uint32_t i {size_ - count}; i > idx; --i)
 				{
-					arr_[i - 1 + count] = arr_[i - 1];
-					arr_[i - 1].~T();
+					if constexpr (move_assignable<T>)
+						arr_[i - 1 + count] = static_cast<T&&>(arr_[i - 1]);
+					else
+					{
+						arr_[i - 1 + count] = arr_[i - 1];
+						arr_[i - 1].~T();
+					}
 				}
 			}
 
@@ -476,13 +552,49 @@ namespace mc
 	uint32_t vector<T>::insert(uint32_t idx, T&& val)
 		requires move_constructible<T> && move_assignable<T>
 	{
-		// TODO don't use generic realloc, to prevent useless move/copy
-		if (size_ + 1 > cap_)
+		bool realloc = size_ + 1 > cap_;
+		if (realloc)
 		{
+			uint32_t new_cap = 0;
 			if (!cap_)
-				realloc(1);
+				new_cap = 1;
 			else
-				realloc(cap_ * 2);
+				new_cap = cap_ * 2;
+
+			T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * new_cap, alignof(T)));
+
+			if constexpr (move_constructible<T>)
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i]));
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + 1}; i < size_ + 1; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i - 1]));
+					arr_[i - 1].~T();
+				}
+			}
+			else
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(arr_[i]);
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + 1}; i < size_ + 1; ++i)
+				{
+					new (new_arr + i) T(arr_[i - 1]);
+					arr_[i - 1].~T();
+				}
+			}
+
+			free(arr_, sizeof(T) * cap_, alignof(T));
+			cap_ = new_cap;
+			arr_ = new_arr;
 		}
 
 		if (idx == size_)
@@ -491,13 +603,16 @@ namespace mc
 		}
 		else
 		{
-			if constexpr (move_constructible<T>)
-				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
-			else
-				new (arr_ + size_) T(arr_[size_ - 1]);
+			if (!realloc)
+			{
+				if constexpr (move_constructible<T>)
+					new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
+				else
+					new (arr_ + size_) T(arr_[size_ - 1]);
 
-			for (uint32_t i {size_ - 1}; i > idx; --i)
-				arr_[i] = static_cast<T&&>(arr_[i - 1]);
+				for (uint32_t i {size_ - 1}; i > idx; --i)
+					arr_[i] = static_cast<T&&>(arr_[i - 1]);
+			}
 
 			arr_[idx] = static_cast<T&&>(val);
 		}
@@ -510,19 +625,55 @@ namespace mc
 	uint32_t vector<T>::insert(uint32_t idx, std::initializer_list<T> ilist)
 		requires copy_constructible<T> && copy_assignable<T>
 	{
-		// TODO don't use generic realloc, to prevent useless move/copy
-		if (size_ + ilist.size() > cap_)
+		bool realloc = size_ + ilist.size() > cap_;
+		if (realloc)
 		{
+			uint32_t new_cap = 0;
 			if (!cap_)
-				realloc(ilist.size());
+				new_cap = ilist.size();
 			else
 			{
-				uint32_t new_cap = cap_;
+				new_cap = cap_;
 				while (new_cap < size_ + ilist.size())
 					new_cap *= 2;
-
-				realloc(new_cap);
 			}
+
+			T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * new_cap, alignof(T)));
+
+			if constexpr (move_constructible<T>)
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i]));
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + static_cast<uint32_t>(ilist.size())};
+				     i < size_ + ilist.size(); ++i)
+				{
+					new (new_arr + i) T(static_cast<T&&>(arr_[i - ilist.size()]));
+					arr_[i - ilist.size()].~T();
+				}
+			}
+			else
+			{
+				for (uint32_t i {0}; i < idx; ++i)
+				{
+					new (new_arr + i) T(arr_[i]);
+					arr_[i].~T();
+				}
+
+				for (uint32_t i {idx + static_cast<uint32_t>(ilist.size())};
+				     i < size_ + ilist.size(); ++i)
+				{
+					new (new_arr + i) T(arr_[i - ilist.size()]);
+					arr_[i - ilist.size()].~T();
+				}
+			}
+
+			free(arr_, sizeof(T) * cap_, alignof(T));
+			cap_ = new_cap;
+			arr_ = new_arr;
 		}
 
 		if (idx == size_)
@@ -536,20 +687,25 @@ namespace mc
 		}
 		else
 		{
-			for (uint32_t i {size_}; i > size_ - ilist.size(); --i)
-				if constexpr (move_constructible<T>)
-					new (arr_ + i - 1 + ilist.size()) T(static_cast<T&&>(arr_[i - 1]));
-				else
-					new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
-
-			for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > idx; --i)
+			if (!realloc)
 			{
-				if constexpr (move_assignable<T>)
-					arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
-				else
+				for (uint32_t i {size_}; i > size_ - ilist.size(); --i)
+					if constexpr (move_constructible<T>)
+						new (arr_ + i - 1 + ilist.size())
+							T(static_cast<T&&>(arr_[i - 1]));
+					else
+						new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
+
+				for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > idx;
+				     --i)
 				{
-					arr_[i - 1 + ilist.size()] = arr_[i - 1];
-					arr_[i - 1].~T();
+					if constexpr (move_assignable<T>)
+						arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
+					else
+					{
+						arr_[i - 1 + ilist.size()] = arr_[i - 1];
+						arr_[i - 1].~T();
+					}
 				}
 			}
 
