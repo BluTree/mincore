@@ -2,7 +2,6 @@
 
 #include "alloc.hh" // Placement new definition
 
-// TODO switch to usage of type traits if (and probably when) created
 namespace mc
 {
 	template <typename From, typename To>
@@ -49,4 +48,7 @@ namespace mc
 
 	template <typename T>
 	concept integral = __is_integral(T);
+
+	template <typename T>
+	concept pointer = __is_pointer(T);
 }

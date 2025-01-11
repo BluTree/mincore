@@ -28,4 +28,25 @@ namespace mc
 
 	template <bool Cond, typename True, typename False>
 	using conditional_t = conditional<Cond, True, False>::type;
+
+	template <typename T>
+	struct remove_pointer
+	{
+		using type = T;
+	};
+
+	template <typename T>
+	struct remove_pointer<T*>
+	{
+		using type = T;
+	};
+
+	template <typename T>
+	struct remove_pointer<T* const>
+	{
+		using type = T;
+	};
+
+	template <typename T>
+	using remove_pointer_t = remove_pointer<T>::type;
 }

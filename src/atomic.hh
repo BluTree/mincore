@@ -26,11 +26,14 @@ namespace mc
 	/// @note The implementation is oriented towards x86_64 architecture, but using the
 	/// gcc/clang intrinsic function, it shouldn't make it incompatible with ARM based
 	/// architectures.
-	/// Currently incompatible with MSVC since they don't provide the "standardized"
-	/// intrinsic functions. See _Interlocked, __iso_volatile, and _ReadWriteBarrier
-	/// intrinsics.
-	template <typename T>
-		requires atomic_storable<T>
+	/// @details Currently incompatible with MSVC since they don't provide the
+	/// "standardized" intrinsic functions. See _Interlocked, __iso_volatile, and
+	/// _ReadWriteBarrier intrinsics.
+	/// Documentation provided by LLVM itself for the intrinsics is outdated (and
+	/// redirects to outdated gcc documentation too). The correct and up-to-date
+	/// documentation can be found here :
+	/// https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+	template <atomic_storable T>
 	class atomic
 	{
 	public:
@@ -56,10 +59,14 @@ namespace mc
 		bool compare_exchange(T& expected, T desired);
 
 		// TODO allow on pointer types, and respect pointer arithmetics
-		T fetch_add(T count)
-			requires integral<T>;
-		T fetch_sub(T count)
-			requires integral<T>;
+		template <integral T2>
+		T fetch_add(T2 count)
+			requires(!same_as<T2, bool>) && ((integral<T> && !same_as<T, bool>) ||
+		                                     (pointer<T> && !same_as<T, void*>));
+		template <integral T2>
+		T fetch_sub(T2 count)
+			requires(!same_as<T2, bool>) && ((integral<T> && !same_as<T, bool>) ||
+		                                     (pointer<T> && !same_as<T, void*>));
 		T fetch_and(T count)
 			requires integral<T>;
 		T fetch_xor(T count)
@@ -70,6 +77,14 @@ namespace mc
 			requires integral<T>;
 
 	private:
+		// The code below is currently not needed with gcc/clang intrinsics, as they
+		// retrieve the pointer and its sizeof automatically. Moreover, keeping the same
+		// type allows clang (and probably gcc, to verify) to warns on types that would
+		// create inefficient atomics and use locks (because of size, alignment).
+		// Normally, the implementation should ensure lock-free atomics, but in case some
+		// case were forgotten, this is still useful.
+		// Still, this code is kept because it may be useful to implement atomics with
+		// MSVC intrinsics.
 		/*using storage = conditional_t<
 		    sizeof(T) == 1, uint8_t,
 		    conditional_t<sizeof(T) == 2, uint16_t,
@@ -98,14 +113,12 @@ namespace mc
 namespace mc
 {
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	atomic<T>::atomic(T val)
 	: val_ {val}
 	{}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	template <mem_order order>
 	T atomic<T>::load()
 		requires(order == mem_order::relaxed || order == mem_order::acquire ||
@@ -117,8 +130,7 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	template <mem_order order>
 	void atomic<T>::store(T val)
 		requires(order == mem_order::relaxed || order == mem_order::release ||
@@ -127,8 +139,7 @@ namespace mc
 		__atomic_store(&val_, &val, static_cast<int32_t>(order));
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	T atomic<T>::exchange(T val)
 	{
 		T ret;
@@ -138,8 +149,7 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	bool atomic<T>::compare_exchange(T& expected, T desired)
 	{
 		// TODO memory order, but (visibly) no impact on x86
@@ -151,32 +161,51 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
-	T atomic<T>::fetch_add(T count)
-		requires integral<T>
+	template <atomic_storable T>
+	template <integral T2>
+	T atomic<T>::fetch_add(T2 count)
+		requires(!same_as<T2, bool>) &&
+	            ((integral<T> && !same_as<T, bool>) || (pointer<T> && !same_as<T, void*>))
 	{
 		T ret;
 		// TODO memory order, but (visibly) no impact on x86
-		ret = __atomic_fetch_add(&val_, count, static_cast<int32_t>(mem_order::seq_cst));
+		if constexpr (is_pointer_v<T>)
+		{
+			ret = __atomic_fetch_add(&val_, count * sizeof(remove_pointer_t<T>),
+			                         static_cast<int32_t>(mem_order::seq_cst));
+		}
+		else
+		{
+			ret = __atomic_fetch_add(&val_, count,
+			                         static_cast<int32_t>(mem_order::seq_cst));
+		}
 
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
-	T atomic<T>::fetch_sub(T count)
-		requires integral<T>
+	template <atomic_storable T>
+	template <integral T2>
+	T atomic<T>::fetch_sub(T2 count)
+		requires(!same_as<T2, bool>) &&
+	            ((integral<T> && !same_as<T, bool>) || (pointer<T> && !same_as<T, void*>))
 	{
 		T ret;
 		// TODO memory order, but (visibly) no impact on x86
-		ret = __atomic_fetch_sub(&val_, count, static_cast<int32_t>(mem_order::seq_cst));
+		if constexpr (is_pointer_v<T>)
+		{
+			ret = __atomic_fetch_sub(&val_, count * sizeof(remove_pointer_t<T>),
+			                         static_cast<int32_t>(mem_order::seq_cst));
+		}
+		else
+		{
+			ret = __atomic_fetch_sub(&val_, count,
+			                         static_cast<int32_t>(mem_order::seq_cst));
+		}
 
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	T atomic<T>::fetch_and(T count)
 		requires integral<T>
 	{
@@ -187,8 +216,7 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	T atomic<T>::fetch_xor(T count)
 		requires integral<T>
 	{
@@ -199,8 +227,7 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	T atomic<T>::fetch_or(T count)
 		requires integral<T>
 	{
@@ -211,8 +238,7 @@ namespace mc
 		return ret;
 	}
 
-	template <typename T>
-		requires atomic_storable<T>
+	template <atomic_storable T>
 	T atomic<T>::fetch_nand(T count)
 		requires integral<T>
 	{
