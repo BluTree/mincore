@@ -396,14 +396,14 @@ namespace mc
 		}
 		else
 		{
-			if constexpr (requires { requires move_constructible<T>; })
+			if constexpr (move_constructible<T>)
 				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
 			else
 				new (arr_ + size_) T(arr_[size_ - 1]);
 
 			for (uint32_t i {size_ - 1}; i > idx; --i)
 			{
-				if constexpr (requires { requires move_assignable<T>; })
+				if constexpr (move_assignable<T>)
 					arr_[i] = static_cast<T&&>(arr_[i - 1]);
 				else
 				{
@@ -412,7 +412,7 @@ namespace mc
 				}
 			}
 
-			if constexpr (requires { requires move_assignable<T>; })
+			if constexpr (move_assignable<T>)
 				arr_[idx].~T();
 			new (arr_ + idx) T(static_cast<Args&&>(args)...);
 		}
@@ -447,14 +447,14 @@ namespace mc
 		else
 		{
 			for (uint32_t i {size_}; i > size_ - count; --i)
-				if constexpr (requires { requires move_constructible<T>; })
+				if constexpr (move_constructible<T>)
 					new (arr_ + i - 1 + count) T(static_cast<T&&>(arr_[i - 1]));
 				else
 					new (arr_ + i - 1 + count) T(arr_[i - 1]);
 
 			for (uint32_t i {size_ - count}; i > idx; --i)
 			{
-				if constexpr (requires { requires move_assignable<T>; })
+				if constexpr (move_assignable<T>)
 					arr_[i - 1 + count] = static_cast<T&&>(arr_[i - 1]);
 				else
 				{
@@ -491,7 +491,7 @@ namespace mc
 		}
 		else
 		{
-			if constexpr (requires { requires move_constructible<T>; })
+			if constexpr (move_constructible<T>)
 				new (arr_ + size_) T(static_cast<T&&>(arr_[size_ - 1]));
 			else
 				new (arr_ + size_) T(arr_[size_ - 1]);
@@ -537,14 +537,14 @@ namespace mc
 		else
 		{
 			for (uint32_t i {size_}; i > size_ - ilist.size(); --i)
-				if constexpr (requires { requires move_constructible<T>; })
+				if constexpr (move_constructible<T>)
 					new (arr_ + i - 1 + ilist.size()) T(static_cast<T&&>(arr_[i - 1]));
 				else
 					new (arr_ + i - 1 + ilist.size()) T(arr_[i - 1]);
 
 			for (uint32_t i {size_ - static_cast<uint32_t>(ilist.size())}; i > idx; --i)
 			{
-				if constexpr (requires { requires move_assignable<T>; })
+				if constexpr (move_assignable<T>)
 					arr_[i - 1 + ilist.size()] = static_cast<T&&>(arr_[i - 1]);
 				else
 				{
@@ -583,7 +583,7 @@ namespace mc
 	void vector<T>::realloc(uint32_t cap)
 	{
 		T* new_arr = reinterpret_cast<T*>(alloc(sizeof(T) * cap, alignof(T)));
-		if constexpr (requires { requires move_constructible<T>; })
+		if constexpr (move_constructible<T>)
 		{
 			for (uint32_t i {0}; i < size_; ++i)
 			{
