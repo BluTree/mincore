@@ -1,12 +1,15 @@
-mg.configurations({"debug", "release"})
+mg.configurations({"debug_coverage", "debug", "release"})
 
 local mincore = mg.project({
 	name = "mincore",
 	type = mg.project_type.sources,
 	sources = {"src/**.cc"},
 	compile_options = {"-g", "-Wall", "-Wextra", "-nostdinc++", "--std=c++20"},
-	debug = {
+	debug_coverage = {
 		compile_options = {"-O0", "-fprofile-instr-generate", "-fcoverage-mapping"}
+	},
+	debug = {
+		compile_options = {"-O0", "-Werror"}
 	},
 	release = {
 		compile_options = {"-O2", "-Werror"}
