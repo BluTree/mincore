@@ -1,4 +1,6 @@
-mg.configurations({"debug_coverage", "debug", "release"})
+if mg.need_generate() then
+	mg.configurations({"debug_coverage", "debug", "release"})
+end
 
 local mincore = mg.project({
 	name = "mincore",
@@ -33,4 +35,8 @@ local tests_exe = mg.project({
 	dependencies = {mincore}
 })
 
-mg.generate({tests_exe})
+if mg.need_generate() then
+	mg.generate({tests_exe})
+else
+	return {project = mincore}
+end
