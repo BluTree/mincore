@@ -29,7 +29,7 @@ namespace mc
 		char*       data() &;
 		char const* data() const&;
 
-		operator string_view() const;
+		operator string_view() const&;
 
 		char&       operator[](uint32_t pos) &;
 		char const& operator[](uint32_t pos) const&;
@@ -134,6 +134,14 @@ namespace mc
 		std::strong_ordering operator<=>(string const& str) const;
 		std::strong_ordering operator<=>(string_view str) const;
 		std::strong_ordering operator<=>(char const* str) const;
+
+		// Delete const rvalue version of these functions, to prevent implicit conversion
+		// from rvalue to const lvalue
+		char const* data() const&& = delete;
+		operator string_view() const&& = delete;
+		char const& operator[](uint32_t pos) const&& = delete;
+		char const& front() const&& = delete;
+		char const& back() const&& = delete;
 
 	private:
 		static constexpr uint32_t small_size = STRING_SMALL_SIZE;

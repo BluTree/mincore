@@ -195,7 +195,7 @@ namespace mc
 		return DATA(*this);
 	}
 
-	string::operator string_view() const
+	string::operator string_view() const&
 	{
 		return string_view(DATA(*this), size());
 	}

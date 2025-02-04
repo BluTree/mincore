@@ -37,7 +37,7 @@ namespace mc
 		T*       data() &;
 		T const* data() const&;
 
-		operator array_view<T>() const;
+		operator array_view<T>() const&;
 
 		T&       operator[](uint32_t idx) &;
 		T const& operator[](uint32_t idx) const&;
@@ -79,6 +79,14 @@ namespace mc
 
 		uint32_t erase(uint32_t idx, uint32_t count = 1)
 			requires move_assignable<T>;
+
+		// Delete const rvalue version of these functions, to prevent implicit conversion
+		// from rvalue to const lvalue
+		T const* data() const&& = delete;
+		operator array_view<T>() const&& = delete;
+		T const& operator[](uint32_t idx) const&& = delete;
+		T const& front() const&& = delete;
+		T const& back() const&& = delete;
 
 	private:
 		void realloc(uint32_t cap);
@@ -187,7 +195,7 @@ namespace mc
 	}
 
 	template <vector_type T>
-	vector<T>::operator array_view<T>() const
+	vector<T>::operator array_view<T>() const&
 	{
 		return {arr_, size_};
 	}
