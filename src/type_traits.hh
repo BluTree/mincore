@@ -49,4 +49,40 @@ namespace mc
 
 	template <typename T>
 	using remove_pointer_t = remove_pointer<T>::type;
+
+	template <typename T>
+	struct add_lvalue
+	{
+		using type = T&;
+	};
+
+	template <>
+	struct add_lvalue<void>
+	{
+		using type = void;
+	};
+
+	template <typename T>
+	using add_lvalue_t = add_lvalue<T>::type;
+
+	template <typename T>
+	struct add_rvalue
+	{
+		using type = T&&;
+	};
+
+	template <>
+	struct add_rvalue<void>
+	{
+		using type = void;
+	};
+
+	template <typename T>
+	using add_rvalue_t = add_rvalue<T>::type;
+
+	template <typename T>
+	consteval add_rvalue_t<T> declval()
+	{
+		static_assert(false, "declval not allowed in an evaluated context");
+	}
 }

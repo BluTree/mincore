@@ -5,6 +5,9 @@
 #ifdef COMPARE_USE_STD
 #include <compare>
 #else
+#include "concepts.hh"
+#include "type_traits.hh"
+
 #include <stdint.h>
 
 using nullptr_t = decltype(nullptr);
@@ -133,6 +136,33 @@ namespace std
 		internal::value_type value_;
 	};
 
+}
+
+namespace mc
+{
+
+	namespace details
+	{
+		template <typename... Args>
+		constexpr uint8_t comp_category = (comp_category<Args> | ...);
+		template <>
+		inline constexpr uint8_t comp_category<std::strong_ordering> = 0;
+		template <>
+		inline constexpr uint8_t comp_category<std::partial_ordering> = 1;
+		template <>
+		inline constexpr uint8_t comp_category<std::weak_ordering> = 2;
+	}
+
+	template <typename T>
+	concept comparison_type =
+		same_as<T, std::strong_ordering> || same_as<T, std::partial_ordering> ||
+		same_as<T, std::weak_ordering>;
+
+	template <comparison_type... Args>
+	using common_comparison_t =
+		conditional_t<(details::comp_category<Args...> & 2) != 0, std::partial_ordering,
+	                  conditional_t<(details::comp_category<Args...> & 4) != 0,
+	                                std::weak_ordering, std::strong_ordering>>;
 }
 
 namespace std
