@@ -274,6 +274,8 @@ namespace mc
 		arr_ = reinterpret_cast<T*>(alloc(sizeof(T) * cap_, alignof(T)));
 		for (uint32_t i {0}; i < size_; ++i)
 			new (arr_ + i) T(other.arr_[i]);
+
+		return *this;
 	}
 
 	template <vector_type T>
@@ -292,6 +294,8 @@ namespace mc
 		other.arr_ = nullptr;
 		other.size_ = 0;
 		other.cap_ = 0;
+
+		return *this;
 	}
 
 	template <vector_type T>
