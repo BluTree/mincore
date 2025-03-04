@@ -4,10 +4,20 @@
 
 GROUP(array_view)
 {
+	bool ctor_ilist(mc::array_view<uint32_t> av)
+	{
+		bool res {true};
+		res &= av.size() == 5;
+		for (uint32_t i {0}; i < av.size(); ++i)
+			res &= av[i] == i;
+
+		return res;
+	}
+
 	TEST(ctor)
 	{
 		uint32_t       arr[5] {0, 1, 2, 3, 4};
-		mc::array_view av0 {arr};
+		mc::array_view av0(arr);
 		CHECK_EQ(av0.size(), 5);
 		for (uint32_t i {0}; i < av0.size(); ++i)
 			CHECK_EQ(av0[i], i)
@@ -19,12 +29,14 @@ GROUP(array_view)
 			CHECK_EQ(av1[i], i)
 
 		delete[] arr_heap;
+
+		ctor_ilist({0, 1, 2, 3, 4});
 	}
 
 	TEST(subarr)
 	{
 		uint32_t       arr[5] {0, 1, 2, 3, 4};
-		mc::array_view av0 {arr};
+		mc::array_view av0(arr);
 		CHECK_EQ(av0.size(), 5);
 
 		mc::array_view av1 = av0.subarr(2, 3);

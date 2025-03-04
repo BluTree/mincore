@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "initializer_list.hh"
+
 using nullptr_t = decltype(nullptr);
 
 namespace mc
@@ -17,6 +19,7 @@ namespace mc
 		template <uint32_t S>
 		constexpr array_view(T const (&arr)[S]);
 		constexpr array_view(T const* data, uint32_t size);
+		constexpr array_view(std::initializer_list<T> ilist);
 
 		constexpr bool     empty() const;
 		constexpr uint32_t size() const;
@@ -47,6 +50,12 @@ namespace mc
 	constexpr array_view<T>::array_view(T const* data, uint32_t size)
 	: arr_ {data}
 	, size_ {size}
+	{}
+
+	template <typename T>
+	constexpr array_view<T>::array_view(std::initializer_list<T> ilist)
+	: arr_ {ilist.begin()}
+	, size_ {static_cast<uint32_t>(ilist.size())}
 	{}
 
 	template <typename T>
