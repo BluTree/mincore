@@ -21,7 +21,7 @@ namespace mc
 	using underlying_type = __internal::_underlying_type<T>::type;
 
 	template <typename T>
-	underlying_type<T> to_underlying(T e)
+	constexpr underlying_type<T> to_underlying(T e)
 	{
 		return static_cast<underlying_type<T>>(e);
 	}

@@ -123,10 +123,10 @@ GROUP(atomic)
 		uint32_t* res1 = at1.fetch_add(2);
 		CHECK_EQ((uint64_t)res1, (uint64_t)nullptr);
 		res1 = at1.fetch_add(5);
-		CHECK_EQ((uint64_t)res1, (2 * sizeof(uint32_t)))
+		CHECK_EQ((uint64_t)res1, 2 * sizeof(uint32_t))
 
 		res1 = at1.load();
-		CHECK_EQ((uint64_t)res1, (7 * sizeof(uint32_t)))
+		CHECK_EQ((uint64_t)res1, 7 * sizeof(uint32_t))
 	}
 
 	TEST(fetch_sub)
@@ -144,9 +144,9 @@ GROUP(atomic)
 		mc::atomic<uint32_t*> at1 {(uint32_t*)(7 * sizeof(uint32_t))};
 
 		uint32_t* res1 = at1.fetch_sub(2);
-		CHECK_EQ((uint64_t)res1, (7 * sizeof(uint32_t)));
+		CHECK_EQ((uint64_t)res1, 7 * sizeof(uint32_t));
 		res1 = at1.fetch_sub(5);
-		CHECK_EQ((uint64_t)res1, (5 * sizeof(uint32_t)))
+		CHECK_EQ((uint64_t)res1, 5 * sizeof(uint32_t))
 
 		res1 = at1.load();
 		CHECK_EQ((uint64_t)res1, (uint64_t)nullptr)
@@ -198,9 +198,9 @@ GROUP(atomic)
 		int32_t res0 = at0.fetch_nand(0x2);
 		CHECK_EQ(res0, 0)
 		res0 = at0.fetch_nand(0x4);
-		CHECK_EQ(res0, (~(0 & 0x2)))
+		CHECK_EQ(res0, ~(0 & 0x2))
 
 		res0 = at0.load();
-		CHECK_EQ(res0, (~(-1 & (0x4))))
+		CHECK_EQ(res0, ~(-1 & (0x4)))
 	}
 }
