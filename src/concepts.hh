@@ -20,7 +20,7 @@ namespace mc
 
 	template <typename To, typename From>
 	concept assignable_from = requires(To lhs, From&& rhs) {
-		{ lhs = static_cast<From&&>(rhs) } -> same_as<To>;
+		{ lhs = static_cast<From &&>(rhs) } -> same_as<To>;
 	};
 
 	template <typename T>
@@ -51,4 +51,10 @@ namespace mc
 
 	template <typename T>
 	concept pointer = __is_pointer(T);
+
+	template <typename T>
+	concept trivially_copyable = __is_trivially_copyable(T);
+
+	template <typename T>
+	concept enumeration = __is_enum(T);
 }

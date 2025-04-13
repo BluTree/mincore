@@ -8,7 +8,7 @@ namespace mc
 	template <typename T>
 	concept atomic_storable =
 		(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
-		is_trivially_copyable_v<T>;
+		trivially_copyable<T>;
 
 	enum class mem_order : uint8_t
 	{
@@ -169,7 +169,7 @@ namespace mc
 	{
 		T ret;
 		// TODO memory order, but (visibly) no impact on x86
-		if constexpr (is_pointer_v<T>)
+		if constexpr (pointer<T>)
 		{
 			ret = __atomic_fetch_add(&val_, count * sizeof(remove_pointer_t<T>),
 			                         static_cast<int32_t>(mem_order::seq_cst));
@@ -191,7 +191,7 @@ namespace mc
 	{
 		T ret;
 		// TODO memory order, but (visibly) no impact on x86
-		if constexpr (is_pointer_v<T>)
+		if constexpr (pointer<T>)
 		{
 			ret = __atomic_fetch_sub(&val_, count * sizeof(remove_pointer_t<T>),
 			                         static_cast<int32_t>(mem_order::seq_cst));
