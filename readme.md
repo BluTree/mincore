@@ -1,9 +1,9 @@
 # mincore
 C++20 **Min**imal **Core** Library.
 
-The goal of the project is to provide an alternative (and not a replacement) of the C++ Standard Library.
+Currently supports Windows and Linux.
 
-Supports Windows and Linux, clang compiler only.
+Can only build with clang, since the library heavily uses clang intrinsics for atomics and type traits.
 
 ## Goals
 
@@ -78,3 +78,7 @@ Alternatively, use [mingen](https://github.com/BluTree/mingen) and use the proje
 Uses [mingen](https://github.com/BluTree/mingen) for tests compilation. Generates the project with it, and compile it.
 
 A custom configuration is provided to enable code coverage reports using clang features, named `debug_coverage`.
+
+Tested on:
+- Windows: clang 18+
+- Linux: clang 18+
