@@ -4,6 +4,9 @@
 
 namespace mc
 {
+	template <typename T>
+	concept is_complete = requires { sizeof(T); };
+
 	template <typename From, typename To>
 	concept convertible_to = __is_convertible_to(From, To);
 

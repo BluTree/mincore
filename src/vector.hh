@@ -11,7 +11,8 @@ namespace mc
 {
 	template <typename T>
 	concept vector_type =
-		destructible<T> && (copy_constructible<T> || move_constructible<T>);
+		!is_complete<T> ||
+		(destructible<T> && (copy_constructible<T> || move_constructible<T>));
 
 	template <vector_type T>
 	class vector
@@ -26,7 +27,7 @@ namespace mc
 		vector(std::initializer_list<T> ilist)
 			requires copy_constructible<T>;
 		vector(vector const& other)
-			requires copy_constructible<T>;
+			requires(!is_complete<T> || copy_constructible<T>);
 		// Doesn't need move_constructible<T> since arr_ is moved, not its content
 		vector(vector&& other);
 		~vector();
@@ -51,7 +52,7 @@ namespace mc
 		void fit();
 
 		vector& operator=(vector const& other)
-			requires copy_constructible<T>;
+			requires(!is_complete<T> || copy_constructible<T>);
 		// Doesn't need move_constructible<T> since arr_ is moved, not its content
 		vector& operator=(vector&& other);
 
@@ -134,7 +135,7 @@ namespace mc
 
 	template <vector_type T>
 	vector<T>::vector(vector const& other)
-		requires copy_constructible<T>
+		requires(!is_complete<T> || copy_constructible<T>)
 	: size_ {other.size_}
 	, cap_ {other.cap_}
 	{
@@ -261,7 +262,7 @@ namespace mc
 
 	template <vector_type T>
 	vector<T>& vector<T>::operator=(vector const& other)
-		requires copy_constructible<T>
+		requires(!is_complete<T> || copy_constructible<T>)
 	{
 		for (uint32_t i {0}; i < size_; ++i)
 			arr_[i].~T();
