@@ -20,12 +20,12 @@ namespace mc
 	public:
 		vector() = default;
 		vector(uint32_t size)
-			requires default_constructible<T>;
+			requires(!is_complete<T> || default_constructible<T>);
 		vector(uint32_t size, T const& val)
-			requires copy_constructible<T>;
+			requires(!is_complete<T> || copy_constructible<T>);
 		// TODO ctor first last
 		vector(std::initializer_list<T> ilist)
-			requires copy_constructible<T>;
+			requires(!is_complete<T> || copy_constructible<T>);
 		vector(vector const& other)
 			requires(!is_complete<T> || copy_constructible<T>);
 		// Doesn't need move_constructible<T> since arr_ is moved, not its content
@@ -102,7 +102,7 @@ namespace mc
 {
 	template <vector_type T>
 	vector<T>::vector(uint32_t size)
-		requires default_constructible<T>
+		requires(!is_complete<T> || default_constructible<T>)
 	: size_ {size}
 	, cap_ {size}
 	{
@@ -113,7 +113,7 @@ namespace mc
 
 	template <vector_type T>
 	vector<T>::vector(uint32_t size, T const& val)
-		requires copy_constructible<T>
+		requires(!is_complete<T> || copy_constructible<T>)
 	: size_ {size}
 	, cap_ {size}
 	{
@@ -124,7 +124,7 @@ namespace mc
 
 	template <vector_type T>
 	vector<T>::vector(std::initializer_list<T> ilist)
-		requires copy_constructible<T>
+		requires(!is_complete<T> || copy_constructible<T>)
 	: size_ {static_cast<uint32_t>(ilist.size())}
 	, cap_ {static_cast<uint32_t>(ilist.size())}
 	{
